@@ -1,0 +1,91 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Lint, tipos, pruebas, migraciones y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          # Base efímera del runner: sin contraseña, solo accesible dentro del job.
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: finanzas
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres@localhost:5432/finanzas
+      ACCESO_DESARROLLO: "false"
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      # Los secretos de autenticación y cron no existen en el código:
+      # si están en los secretos de GitHub se usan; si no, se generan al azar para este job.
+      - name: Preparar secretos
+        env:
+          SECRETO_AUTH: ${{ secrets.NEXTAUTH_SECRET }}
+          SECRETO_CRON: ${{ secrets.CRON_SECRET }}
+        run: |
+          auth="${SECRETO_AUTH:-$(openssl rand -base64 32)}"
+          cron="${SECRETO_CRON:-$(openssl rand -hex 24)}"
+          echo "::add-mask::$auth"
+          echo "::add-mask::$cron"
+          echo "NEXTAUTH_SECRET=$auth" >> "$GITHUB_ENV"
+          echo "CRON_SECRET=$cron" >> "$GITHUB_ENV"
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Formato
+        run: npm run format:check
+
+      - name: Tipos
+        run: npm run typecheck
+
+      - name: Pruebas unitarias
+        run: npm run test:cobertura
+
+      - name: Migraciones
+        run: npx prisma migrate deploy
+
+      - name: El esquema coincide con las migraciones
+        run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+
+      - name: Semilla
+        run: npm run db:sembrar
+
+      - name: Pruebas de integración
+        run: npm run test:db
+
+      - name: Build
+        run: npm run build

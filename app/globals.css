@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/* Tokens de color de la sección 3. Ningún componente usa hexadecimales directos. */
+:root {
+  --fondo: #eef2fa;
+  --superficie: #ffffff;
+  --superficie-2: #f5f7fc;
+  --borde: #dce3ef;
+  --texto: #0f172a;
+  --texto-2: #475569;
+  --texto-3: #64748b;
+  --marca: #1e3a8a;
+  --acento: #2563eb;
+  --acento-suave: #dbeafe;
+  --ingreso: #15803d;
+  --ingreso-fondo: #dcfce7;
+  --gasto: #b91c1c;
+  --gasto-fondo: #fee2e2;
+  --alerta: #b45309;
+  --alerta-fondo: #fef3c7;
+  color-scheme: light;
+}
+
+/* El selector de tema (fase 2) pondrá data-tema="claro" | "oscuro"; sin él se sigue al sistema. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) {
+    --fondo: #0b1220;
+    --superficie: #121a2b;
+    --superficie-2: #1a2438;
+    --borde: #26324a;
+    --texto: #e6ecf5;
+    --texto-2: #a3b0c5;
+    --texto-3: #7d8aa3;
+    --marca: #1e40af;
+    --acento: #60a5fa;
+    --acento-suave: #1e3a5f;
+    --ingreso: #4ade80;
+    --ingreso-fondo: #12301f;
+    --gasto: #f87171;
+    --gasto-fondo: #3a1517;
+    --alerta: #fbbf24;
+    --alerta-fondo: #3a2a0b;
+    color-scheme: dark;
+  }
+}
+
+:root[data-tema="oscuro"] {
+  --fondo: #0b1220;
+  --superficie: #121a2b;
+  --superficie-2: #1a2438;
+  --borde: #26324a;
+  --texto: #e6ecf5;
+  --texto-2: #a3b0c5;
+  --texto-3: #7d8aa3;
+  --marca: #1e40af;
+  --acento: #60a5fa;
+  --acento-suave: #1e3a5f;
+  --ingreso: #4ade80;
+  --ingreso-fondo: #12301f;
+  --gasto: #f87171;
+  --gasto-fondo: #3a1517;
+  --alerta: #fbbf24;
+  --alerta-fondo: #3a2a0b;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-superficie-2: var(--superficie-2);
+  --color-borde: var(--borde);
+  --color-texto: var(--texto);
+  --color-texto-2: var(--texto-2);
+  --color-texto-3: var(--texto-3);
+  --color-marca: var(--marca);
+  --color-acento: var(--acento);
+  --color-acento-suave: var(--acento-suave);
+  --color-ingreso: var(--ingreso);
+  --color-ingreso-fondo: var(--ingreso-fondo);
+  --color-gasto: var(--gasto);
+  --color-gasto-fondo: var(--gasto-fondo);
+  --color-alerta: var(--alerta);
+  --color-alerta-fondo: var(--alerta-fondo);
+  --font-sans: var(--font-plex-sans), system-ui, sans-serif;
+}
+
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: var(--font-plex-sans), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}

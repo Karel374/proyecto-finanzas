@@ -1,0 +1,901 @@
+// Esquema de la app de finanzas personales (sección 5 de docs/ESPECIFICACION.md).
+// Reglas: todo monto es Int en centavos, toda fecha de calendario es DATE,
+// toda marca de tiempo es TIMESTAMPTZ y toda tabla propia lleva usuarioId.
+// Las restricciones CHECK y los índices únicos parciales viven como SQL en las migraciones.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────── Enums ─────────────────────────
+
+enum TipoMovimiento {
+  GASTO
+  INGRESO
+}
+
+enum ClaseCategoria {
+  NECESIDAD
+  DESEO
+}
+
+enum CategoriaSistema {
+  INTERESES_COMISIONES
+  RENDIMIENTOS
+}
+
+enum MetodoPago {
+  EFECTIVO
+  DEBITO
+  CREDITO
+  TRANSFERENCIA
+}
+
+enum Frecuencia {
+  SEMANAL
+  MENSUAL
+  ANUAL
+}
+
+enum EstadoMeta {
+  ACTIVA
+  CUMPLIDA
+  ARCHIVADA
+}
+
+enum TipoProducto {
+  CUENTA_AHORRO
+  POLIZA
+  FONDO_INVERSION
+  ACCIONES_LOCALES
+  ETF
+  CRIPTO
+  OTRO
+}
+
+enum TipoInstitucion {
+  BANCO
+  MUTUALISTA
+  COOPERATIVA
+  CASA_VALORES
+  BROKER_EXTERIOR
+  EXCHANGE
+  OTRO
+}
+
+enum PerfilInversor {
+  CONSERVADOR
+  MODERADO
+  AGRESIVO
+}
+
+enum NivelCapital {
+  NINGUNO
+  BAJO
+  MEDIO
+}
+
+enum NivelIdea {
+  CUALQUIERA
+  ESTUDIANTE
+  JUNIOR
+  PROFESIONAL_TITULADO
+}
+
+enum NivelProfesional {
+  ESTUDIANTE
+  JUNIOR
+  SEMI_SENIOR
+  SENIOR
+}
+
+enum PreferenciaModalidad {
+  REMOTO
+  PRESENCIAL
+  AMBAS
+}
+
+enum Alcance {
+  ECUADOR
+  EXTERIOR
+  AMBOS
+}
+
+enum EstadoPlan {
+  ACTIVO
+  PAUSADO
+  TERMINADO
+}
+
+enum Tema {
+  CLARO
+  OSCURO
+  SISTEMA
+}
+
+enum EtapaOportunidad {
+  PROSPECTO
+  CONTACTADO
+  PROPUESTA
+  NEGOCIACION
+  GANADA
+  PERDIDA
+}
+
+enum MotivoPerdida {
+  PRECIO
+  TIEMPO
+  NO_RESPONDIO
+  OTRO
+}
+
+enum EstadoCobro {
+  PENDIENTE
+  COBRADO
+  VENCIDO
+}
+
+enum TipoCuenta {
+  EFECTIVO
+  BANCO
+  BILLETERA
+  TARJETA_CREDITO
+}
+
+enum TipoBien {
+  VEHICULO
+  EQUIPO_TECNOLOGICO
+  INMUEBLE
+  OTRO
+}
+
+enum TipoDeuda {
+  CONSUMO
+  EDUCATIVA
+  VEHICULAR
+  HIPOTECARIA
+  FAMILIAR
+}
+
+enum EtapaPostulacion {
+  GUARDADA
+  POSTULADA
+  ENTREVISTA
+  PRUEBA_TECNICA
+  OFERTA
+  ACEPTADA
+  RECHAZADA
+  DESCARTADA
+}
+
+enum FuentePostulacion {
+  PORTAL
+  RED_PROFESIONAL
+  REFERIDO
+  OTRA
+}
+
+enum ModalidadTrabajo {
+  REMOTO
+  PRESENCIAL
+  HIBRIDO
+}
+
+enum TipoContrato {
+  RELACION_DEPENDENCIA
+  SERVICIOS_PROFESIONALES
+  OTRO
+}
+
+enum EstadoPrestamo {
+  ACTIVO
+  PAGADO
+  PERDIDO
+}
+
+enum RubroSRI {
+  VIVIENDA
+  EDUCACION
+  SALUD
+  VESTIMENTA
+  ALIMENTACION
+  TURISMO
+}
+
+// ───────────────────────── Auth.js ─────────────────────────
+// Nombres en inglés por contrato con el adaptador de Prisma de Auth.js.
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @db.Timestamptz(3)
+  image         String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+
+  accounts Account[]
+  sessions Session[]
+
+  categorias          Categoria[]
+  movimientos         Movimiento[]
+  recurrentes         Recurrente[]
+  presupuestos        Presupuesto[]
+  metas               Meta[]
+  aportesMeta         AporteMeta[]
+  inversiones         Inversion[]
+  perfilesRiesgo      PerfilRiesgo[]
+  ideasIngreso        IdeaIngreso[]
+  planesIngreso       PlanIngreso[]
+  ajustes             Ajustes?
+  perfilProfesional   PerfilProfesional?
+  oportunidades       Oportunidad[]
+  cobros              Cobro[]
+  registrosHoras      RegistroHoras[]
+  escenarios          Escenario[]
+  cuentas             Cuenta[]
+  transferencias      Transferencia[]
+  conciliaciones      Conciliacion[]
+  bienes              Bien[]
+  fotosPatrimonio     FotoPatrimonio[]
+  deudas              Deuda[]
+  pagosDeuda          PagoDeuda[]
+  postulaciones       Postulacion[]
+  ofertasLaborales    OfertaLaboral[]
+  versionesCV         VersionCV[]
+  revisionesMensuales RevisionMensual[]
+  prestamos           Prestamo[]
+  abonosPrestamo      AbonoPrestamo[]
+  avisos              Aviso[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime @db.Timestamptz(3)
+
+  @@unique([identifier, token])
+}
+
+// ───────────────────────── Movimientos y categorías ─────────────────────────
+
+model Categoria {
+  id        String            @id @default(cuid())
+  usuarioId String
+  nombre    String
+  tipo      TipoMovimiento
+  clase     ClaseCategoria?
+  colorSlot Int?
+  sistema   CategoriaSistema?
+  orden     Int
+  archivada Boolean           @default(false)
+
+  usuario      User          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  movimientos  Movimiento[]
+  recurrentes  Recurrente[]
+  presupuestos Presupuesto[]
+
+  @@unique([usuarioId, tipo, nombre])
+  @@index([usuarioId, tipo, orden])
+}
+
+model Movimiento {
+  id            String         @id @default(cuid())
+  usuarioId     String
+  tipo          TipoMovimiento
+  montoCentavos Int
+  categoriaId   String
+  cuentaId      String
+  fecha         DateTime       @db.Date
+  nota          String?        @db.VarChar(140)
+  metodoPago    MetodoPago
+  recurrenteId  String?
+  planIngresoId String?
+  rubroSRI      RubroSRI?
+  conFactura    Boolean        @default(false)
+  esAjuste      Boolean        @default(false)
+  creadoEn      DateTime       @default(now()) @db.Timestamptz(3)
+  actualizadoEn DateTime       @updatedAt @db.Timestamptz(3)
+
+  usuario     User         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  // NoAction (y no Restrict): bloquea borrar una categoría o cuenta con movimientos,
+  // pero deja que el borrado en cascada del usuario funcione en una sola sentencia.
+  categoria   Categoria    @relation(fields: [categoriaId], references: [id], onDelete: NoAction)
+  cuenta      Cuenta       @relation(fields: [cuentaId], references: [id], onDelete: NoAction)
+  recurrente  Recurrente?  @relation(fields: [recurrenteId], references: [id], onDelete: SetNull)
+  planIngreso PlanIngreso? @relation(fields: [planIngresoId], references: [id], onDelete: SetNull)
+
+  cobro          Cobro?
+  pagoDeudaInteres PagoDeuda?
+
+  @@unique([recurrenteId, fecha])
+  @@index([usuarioId, fecha])
+  @@index([usuarioId, categoriaId, fecha])
+}
+
+model Recurrente {
+  id             String         @id @default(cuid())
+  usuarioId      String
+  tipo           TipoMovimiento
+  montoCentavos  Int
+  categoriaId    String
+  cuentaId       String
+  nota           String?        @db.VarChar(140)
+  frecuencia     Frecuencia
+  diaSemana      Int?
+  diaMes         Int?
+  mes            Int?
+  fechaInicio    DateTime       @db.Date
+  fechaFin       DateTime?      @db.Date
+  activo         Boolean        @default(true)
+  ultimaGenerada DateTime?      @db.Date
+
+  usuario     User         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  categoria   Categoria    @relation(fields: [categoriaId], references: [id], onDelete: NoAction)
+  cuenta      Cuenta       @relation(fields: [cuentaId], references: [id], onDelete: NoAction)
+  movimientos Movimiento[]
+
+  @@index([usuarioId, activo])
+}
+
+model Presupuesto {
+  id                   String @id @default(cuid())
+  usuarioId            String
+  categoriaId          String
+  montoMensualCentavos Int
+  vigenteDesde         String @db.Char(7)
+
+  usuario   User      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  categoria Categoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade)
+
+  @@unique([categoriaId, vigenteDesde])
+  @@index([usuarioId])
+}
+
+// ───────────────────────── Metas ─────────────────────────
+
+model Meta {
+  id                    String     @id @default(cuid())
+  usuarioId             String
+  nombre                String
+  montoObjetivoCentavos Int
+  fechaObjetivo         DateTime   @db.Date
+  esFondoEmergencia     Boolean    @default(false)
+  objetivoManual        Boolean    @default(false)
+  prioridad             Int        @default(0)
+  creadaEn              DateTime   @default(now()) @db.Timestamptz(3)
+  estado                EstadoMeta @default(ACTIVA)
+  orden                 Int        @default(0)
+
+  usuario User         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  aportes AporteMeta[]
+
+  @@index([usuarioId, estado])
+}
+
+model AporteMeta {
+  id            String   @id @default(cuid())
+  usuarioId     String
+  metaId        String
+  montoCentavos Int
+  fecha         DateTime @db.Date
+  nota          String?  @db.VarChar(140)
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  meta    Meta @relation(fields: [metaId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, fecha])
+  @@index([metaId])
+}
+
+// ───────────────────────── Inversión ─────────────────────────
+
+model Inversion {
+  id                  String          @id @default(cuid())
+  usuarioId           String
+  tipoProducto        TipoProducto
+  institucion         String
+  tipoInstitucion     TipoInstitucion
+  cuentaId            String?
+  coberturaCentavos   Int?
+  montoCentavos       Int
+  tasaAnual           Decimal?        @db.Decimal(7, 4)
+  fechaInicio         DateTime        @db.Date
+  fechaVencimiento    DateTime?       @db.Date
+  valorActualCentavos Int
+  nota                String?
+
+  usuario        User            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cuenta         Cuenta?         @relation(fields: [cuentaId], references: [id], onDelete: SetNull)
+  transferencias Transferencia[]
+
+  @@index([usuarioId])
+}
+
+model PerfilRiesgo {
+  id         String         @id @default(cuid())
+  usuarioId  String
+  respuestas Json
+  puntaje    Int
+  perfil     PerfilInversor
+  fecha      DateTime       @default(now()) @db.Timestamptz(3)
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, fecha])
+}
+
+// ───────────────────────── Generar ingresos ─────────────────────────
+
+model IdeaIngreso {
+  id                    String               @id @default(cuid())
+  usuarioId             String
+  titulo                String
+  descripcion           String
+  area                  String
+  habilidadesRequeridas String[]
+  nivelMinimo           NivelIdea
+  horasSemanaMin        Int
+  horasSemanaMax        Int
+  capital               NivelCapital
+  modalidad             PreferenciaModalidad
+  tiempoPrimerCobro     String
+  canales               String
+  requisitos            String
+  pasos                 String[]
+  esSemilla             Boolean              @default(false)
+
+  usuario User          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  planes  PlanIngreso[]
+
+  @@index([usuarioId, area])
+}
+
+model PlanIngreso {
+  id                  String     @id @default(cuid())
+  usuarioId           String
+  ideaId              String
+  estado              EstadoPlan @default(ACTIVO)
+  pasosHechos         Int[]
+  metaMensualCentavos Int?
+  inicio              DateTime   @db.Date
+
+  usuario       User            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  idea          IdeaIngreso     @relation(fields: [ideaId], references: [id], onDelete: Cascade)
+  movimientos   Movimiento[]
+  oportunidades Oportunidad[]
+  horas         RegistroHoras[]
+
+  @@index([usuarioId, estado])
+}
+
+model Ajustes {
+  id                            String    @id @default(cuid())
+  usuarioId                     String    @unique
+  nombre                        String?
+  tema                          Tema      @default(SISTEMA)
+  umbralHormigaCentavos         Int       @default(500)
+  mesesFondoObjetivo            Int       @default(6)
+  metaIngresoExtraCentavos      Int?
+  plantillas                    Json      @default("[]")
+  plantillasMensaje             Json      @default("{}")
+  cargasFamiliares              Int       @default(0)
+  metaPatrimonioCentavos        Int?
+  fechaMetaPatrimonio           DateTime? @db.Date
+  multiplicadorIndependencia    Int       @default(25)
+  aporteIess                    Decimal   @default(9.45) @db.Decimal(5, 2)
+  diaRevision                   Int       @default(1)
+  descartes                     Json      @default("[]")
+  distribucionObjetivo          Json      @default("{}")
+  limiteCoberturaBancosCentavos Int       @default(3200000)
+  fechaVerificacionCobertura    DateTime? @db.Date
+  porcentajeNoFacturable        Decimal   @default(30) @db.Decimal(5, 2)
+  colchonImprevistos            Decimal   @default(20) @db.Decimal(5, 2)
+  porcentajeImpuestosTarifa     Decimal?  @db.Decimal(5, 2)
+  ultimaCategoriaGastoId        String?
+  ultimaCategoriaIngresoId      String?
+  ultimaCuentaId                String?
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+}
+
+model PerfilProfesional {
+  id              String                @id @default(cuid())
+  usuarioId       String                @unique
+  profesion       String?
+  nivel           NivelProfesional?
+  habilidades     String[]
+  certificaciones String?
+  idiomas         String?
+  horasSemana     Int?
+  capital         NivelCapital?
+  modalidad       PreferenciaModalidad?
+  alcance         Alcance?
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+}
+
+model Oportunidad {
+  id                    String           @id @default(cuid())
+  usuarioId             String
+  planIngresoId         String?
+  cliente               String
+  contacto              String?
+  montoEstimadoCentavos Int?
+  etapa                 EtapaOportunidad @default(PROSPECTO)
+  proximoSeguimiento    DateTime?        @db.Date
+  notas                 String?
+  motivoPerdida         MotivoPerdida?
+
+  usuario     User         @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  planIngreso PlanIngreso? @relation(fields: [planIngresoId], references: [id], onDelete: SetNull)
+  cobros      Cobro[]
+
+  @@index([usuarioId, etapa])
+}
+
+model Cobro {
+  id            String      @id @default(cuid())
+  usuarioId     String
+  oportunidadId String
+  montoCentavos Int
+  vencimiento   DateTime    @db.Date
+  estado        EstadoCobro @default(PENDIENTE)
+  fechaCobro    DateTime?   @db.Date
+  movimientoId  String?     @unique
+
+  usuario     User        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  oportunidad Oportunidad @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  movimiento  Movimiento? @relation(fields: [movimientoId], references: [id], onDelete: SetNull)
+
+  @@index([usuarioId, estado])
+}
+
+model RegistroHoras {
+  id            String   @id @default(cuid())
+  usuarioId     String
+  planIngresoId String
+  fecha         DateTime @db.Date
+  horas         Decimal  @db.Decimal(5, 2)
+  descripcion   String?
+
+  usuario     User        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  planIngreso PlanIngreso @relation(fields: [planIngresoId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, fecha])
+}
+
+model Escenario {
+  id         String   @id @default(cuid())
+  usuarioId  String
+  nombre     String
+  parametros Json
+  creadoEn   DateTime @default(now()) @db.Timestamptz(3)
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+}
+
+// ───────────────────────── Cuentas y patrimonio ─────────────────────────
+
+model Cuenta {
+  id                   String     @id @default(cuid())
+  usuarioId            String
+  nombre               String
+  tipo                 TipoCuenta
+  institucion          String?
+  saldoInicialCentavos Int        @default(0)
+  fechaSaldoInicial    DateTime   @db.Date
+  cupoCentavos         Int?
+  diaCorte             Int?
+  diaPago              Int?
+  archivada            Boolean    @default(false)
+
+  usuario               User            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  movimientos           Movimiento[]
+  recurrentes           Recurrente[]
+  inversiones           Inversion[]
+  transferenciasSalida  Transferencia[] @relation("TransferenciaOrigen")
+  transferenciasEntrada Transferencia[] @relation("TransferenciaDestino")
+  conciliaciones        Conciliacion[]
+  pagosDeuda            PagoDeuda[]
+  prestamos             Prestamo[]
+  abonosPrestamo        AbonoPrestamo[]
+
+  @@index([usuarioId, archivada])
+}
+
+model Transferencia {
+  id              String   @id @default(cuid())
+  usuarioId       String
+  cuentaOrigenId  String?
+  cuentaDestinoId String?
+  montoCentavos   Int
+  fecha           DateTime @db.Date
+  nota            String?  @db.VarChar(140)
+  deudaId         String?
+  prestamoId      String?
+  inversionId     String?
+  creadoEn        DateTime @default(now()) @db.Timestamptz(3)
+
+  usuario       User       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cuentaOrigen  Cuenta?    @relation("TransferenciaOrigen", fields: [cuentaOrigenId], references: [id], onDelete: NoAction)
+  cuentaDestino Cuenta?    @relation("TransferenciaDestino", fields: [cuentaDestinoId], references: [id], onDelete: NoAction)
+  deuda         Deuda?     @relation(fields: [deudaId], references: [id], onDelete: Cascade)
+  prestamo      Prestamo?  @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
+  inversion     Inversion? @relation(fields: [inversionId], references: [id], onDelete: Cascade)
+
+  pagoDeudaCapital PagoDeuda?
+  abonoPrestamo    AbonoPrestamo?
+
+  @@index([usuarioId, fecha])
+  @@index([cuentaOrigenId])
+  @@index([cuentaDestinoId])
+}
+
+model Conciliacion {
+  id                 String   @id @default(cuid())
+  usuarioId          String
+  cuentaId           String
+  fecha              DateTime @db.Date
+  saldoRealCentavos  Int
+  diferenciaCentavos Int
+  resuelta           Boolean  @default(false)
+
+  usuario User   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cuenta  Cuenta @relation(fields: [cuentaId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, resuelta])
+}
+
+model Bien {
+  id                  String   @id @default(cuid())
+  usuarioId           String
+  nombre              String
+  tipo                TipoBien
+  valorCompraCentavos Int
+  fechaCompra         DateTime @db.Date
+  valorActualCentavos Int
+  depreciacionAnual   Decimal? @db.Decimal(5, 2)
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+}
+
+model FotoPatrimonio {
+  id             String   @id @default(cuid())
+  usuarioId      String
+  fecha          DateTime @db.Date
+  mes            String   @db.Char(7)
+  activosPorTipo Json
+  pasivosPorTipo Json
+  netoCentavos   Int
+  manual         Boolean  @default(false)
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  // Índice único parcial (usuarioId, mes) WHERE manual = false: en la migración.
+  @@index([usuarioId, fecha])
+}
+
+// ───────────────────────── Deudas ─────────────────────────
+
+model Deuda {
+  id                   String    @id @default(cuid())
+  usuarioId            String
+  nombre               String
+  acreedor             String?
+  tipo                 TipoDeuda
+  montoOriginalCentavos Int
+  saldoCentavos        Int
+  tasaAnual            Decimal   @db.Decimal(7, 4)
+  cuotaCentavos        Int
+  diaPago              Int
+  fechaInicio          DateTime  @db.Date
+  plazoMeses           Int?
+
+  usuario        User            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  pagos          PagoDeuda[]
+  transferencias Transferencia[]
+
+  @@index([usuarioId])
+}
+
+model PagoDeuda {
+  id                     String   @id @default(cuid())
+  usuarioId              String
+  deudaId                String
+  cuentaId               String
+  fecha                  DateTime @db.Date
+  interesCentavos        Int
+  capitalCentavos        Int
+  movimientoInteresId    String?  @unique
+  transferenciaCapitalId String?  @unique
+
+  usuario              User           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  deuda                Deuda          @relation(fields: [deudaId], references: [id], onDelete: Cascade)
+  cuenta               Cuenta         @relation(fields: [cuentaId], references: [id], onDelete: NoAction)
+  movimientoInteres    Movimiento?    @relation(fields: [movimientoInteresId], references: [id], onDelete: SetNull)
+  transferenciaCapital Transferencia? @relation(fields: [transferenciaCapitalId], references: [id], onDelete: SetNull)
+
+  @@index([usuarioId, fecha])
+}
+
+// ───────────────────────── Empleo ─────────────────────────
+
+model Postulacion {
+  id                 String             @id @default(cuid())
+  usuarioId          String
+  empresa            String
+  puesto             String
+  enlace             String?
+  fuente             FuentePostulacion?
+  fecha              DateTime           @db.Date
+  modalidad          ModalidadTrabajo?
+  ciudad             String?
+  salarioCentavos    Int?
+  habilidades        String[]
+  versionCvId        String?
+  etapa              EtapaPostulacion   @default(GUARDADA)
+  proximoSeguimiento DateTime?          @db.Date
+  notas              String?
+  motivoCierre       String?
+
+  usuario   User            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  versionCv VersionCV?      @relation(fields: [versionCvId], references: [id], onDelete: SetNull)
+  ofertas   OfertaLaboral[]
+
+  @@index([usuarioId, etapa])
+  @@index([usuarioId, fecha])
+}
+
+model OfertaLaboral {
+  id                          String            @id @default(cuid())
+  usuarioId                   String
+  postulacionId               String
+  brutoCentavos               Int
+  tipoContrato                TipoContrato
+  aporteIess                  Decimal           @db.Decimal(5, 2)
+  otrosDescuentosCentavos     Int               @default(0)
+  beneficiosMensualesCentavos Int               @default(0)
+  trasladoCentavos            Int               @default(0)
+  horasSemana                 Decimal           @db.Decimal(5, 2)
+  modalidad                   ModalidadTrabajo?
+  retencionEstimadaCentavos   Int?
+  aceptada                    Boolean           @default(false)
+
+  usuario     User        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  postulacion Postulacion @relation(fields: [postulacionId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+}
+
+model VersionCV {
+  id        String   @id @default(cuid())
+  usuarioId String
+  nombre    String
+  enlace    String
+  fecha     DateTime @db.Date
+  notas     String?
+
+  usuario       User          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  postulaciones Postulacion[]
+
+  @@index([usuarioId])
+}
+
+// ───────────────────────── Herramientas ─────────────────────────
+
+model RevisionMensual {
+  id           String    @id @default(cuid())
+  usuarioId    String
+  mes          String    @db.Char(7)
+  pasosHechos  Int[]
+  nota         String?
+  completadaEn DateTime? @db.Timestamptz(3)
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, mes])
+}
+
+model Prestamo {
+  id            String         @id @default(cuid())
+  usuarioId     String
+  persona       String
+  contacto      String?
+  montoCentavos Int
+  cuentaId      String
+  fecha         DateTime       @db.Date
+  fechaEsperada DateTime?      @db.Date
+  estado        EstadoPrestamo @default(ACTIVO)
+  nota          String?
+
+  usuario        User            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cuenta         Cuenta          @relation(fields: [cuentaId], references: [id], onDelete: NoAction)
+  abonos         AbonoPrestamo[]
+  transferencias Transferencia[]
+
+  @@index([usuarioId, estado])
+}
+
+model AbonoPrestamo {
+  id              String   @id @default(cuid())
+  usuarioId       String
+  prestamoId      String
+  cuentaId        String
+  montoCentavos   Int
+  fecha           DateTime @db.Date
+  transferenciaId String?  @unique
+
+  usuario       User           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  prestamo      Prestamo       @relation(fields: [prestamoId], references: [id], onDelete: Cascade)
+  cuenta        Cuenta         @relation(fields: [cuentaId], references: [id], onDelete: NoAction)
+  transferencia Transferencia? @relation(fields: [transferenciaId], references: [id], onDelete: SetNull)
+
+  @@index([prestamoId])
+}
+
+// Global: parámetros del SRI por año, compartidos por todos los usuarios.
+model ParametrosSRI {
+  id                 String   @id @default(cuid())
+  anio               Int      @unique
+  canastaCentavos    Int
+  tablaCanastas      Json
+  porcentajeRebaja   Decimal  @db.Decimal(5, 2)
+  baseExentaCentavos Int
+  fuente             String
+  fechaVerificacion  DateTime @db.Date
+}
+
+model Aviso {
+  id        String    @id @default(cuid())
+  usuarioId String
+  tipo      String
+  clave     String
+  titulo    String
+  mensaje   String
+  enlace    String?
+  fecha     DateTime  @db.Date
+  leidoEn   DateTime? @db.Timestamptz(3)
+  creadoEn  DateTime  @default(now()) @db.Timestamptz(3)
+
+  usuario User @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, clave])
+  @@index([usuarioId, leidoEn])
+}
