@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans } from "next/font/google";
 
+import { SCRIPT_TEMA } from "@/lib/tema";
+
 import "./globals.css";
 
 const plexSans = IBM_Plex_Sans({
@@ -16,7 +18,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="es" className={`${plexSans.variable} h-full antialiased`}>
+    // suppressHydrationWarning: el script del tema pone data-tema en el <html> antes de que React hidrate.
+    <html lang="es" className={`${plexSans.variable} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      </head>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

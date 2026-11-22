@@ -26,7 +26,16 @@ export default defineConfig({
           name: "unidad",
           environment: "node",
           include: ["tests/**/*.test.ts"],
-          exclude: ["tests/integracion/**"],
+          exclude: ["tests/integracion/**", "tests/produccion/**"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "produccion",
+          environment: "node",
+          include: ["tests/produccion/**/*.test.ts"],
+          testTimeout: 20_000,
         },
       },
       {

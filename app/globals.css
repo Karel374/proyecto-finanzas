@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-/* Tokens de color de la sección 3. Ningún componente usa hexadecimales directos. */
+/* Tokens de color de la sección 3. Ningún componente usa hexadecimales directos.
+   --sobre-marca y --sobre-acento son el texto que va encima de esos fondos, con contraste AA en los dos temas. */
 :root {
   --fondo: #eef2fa;
   --superficie: #ffffff;
@@ -18,10 +19,12 @@
   --gasto-fondo: #fee2e2;
   --alerta: #b45309;
   --alerta-fondo: #fef3c7;
+  --sobre-marca: #ffffff;
+  --sobre-acento: #ffffff;
   color-scheme: light;
 }
 
-/* El selector de tema (fase 2) pondrá data-tema="claro" | "oscuro"; sin él se sigue al sistema. */
+/* data-tema="claro" | "oscuro" lo pone el selector de tema; sin él se sigue al sistema. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-tema="claro"]) {
     --fondo: #0b1220;
@@ -40,6 +43,8 @@
     --gasto-fondo: #3a1517;
     --alerta: #fbbf24;
     --alerta-fondo: #3a2a0b;
+    --sobre-marca: #ffffff;
+    --sobre-acento: #0b1220;
     color-scheme: dark;
   }
 }
@@ -61,6 +66,8 @@
   --gasto-fondo: #3a1517;
   --alerta: #fbbf24;
   --alerta-fondo: #3a2a0b;
+  --sobre-marca: #ffffff;
+  --sobre-acento: #0b1220;
   color-scheme: dark;
 }
 
@@ -81,6 +88,8 @@
   --color-gasto-fondo: var(--gasto-fondo);
   --color-alerta: var(--alerta);
   --color-alerta-fondo: var(--alerta-fondo);
+  --color-sobre-marca: var(--sobre-marca);
+  --color-sobre-acento: var(--sobre-acento);
   --font-sans: var(--font-plex-sans), system-ui, sans-serif;
 }
 

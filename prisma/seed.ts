@@ -1,6 +1,7 @@
 /**
  * Semilla global: parámetros del SRI de 2026 (sección 22). Se puede correr varias veces.
- * La siembra por usuario (categorías, ajustes, cuenta Efectivo, ideas) llega en la fase 2.
+ * La siembra por usuario (categorías, ajustes, cuenta Efectivo, ideas) ocurre al crear cada
+ * usuario, en lib/datos/siembra.ts.
  */
 import "dotenv/config";
 

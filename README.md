@@ -7,9 +7,11 @@ gastos deducibles del SRI y recibir recomendaciones que siempre explican de dón
 `Next.js 16` · `TypeScript estricto` · `PostgreSQL 18` · `Prisma 7` · `Costo de operación: $0`
 
 > Proyecto personal en construcción. Se desarrolla por fases (ver [Hoja de ruta](#hoja-de-ruta)).
-> Hoy está terminada la **fase 1, base del proyecto**: no tiene todavía pantallas de uso, inicio
-> de sesión ni cálculos. Las recomendaciones de la app serán educativas y no reemplazan la asesoría
-> de un profesional ni la consulta al SRI.
+> Hoy están terminadas la **fase 1, base del proyecto**, y la **fase 2, autenticación y
+> siembra**: ya se puede entrar, cada usuario nuevo recibe sus datos iniciales y el menú lateral
+> está completo, pero las secciones todavía no tienen pantallas de uso ni cálculos. Las
+> recomendaciones de la app serán educativas y no reemplazan la asesoría de un profesional ni la
+> consulta al SRI.
 
 ---
 
@@ -80,10 +82,11 @@ Estas reglas guían todo el código y no se negocian:
 
 ## Estado del proyecto
 
-| Fase    | Estado        |
-| ------- | ------------- |
-| 1. Base | **Terminada** |
-| 2 a 16  | Pendientes    |
+| Fase                       | Estado        |
+| -------------------------- | ------------- |
+| 1. Base                    | **Terminada** |
+| 2. Autenticación y siembra | **Terminada** |
+| 3 a 16                     | Pendientes    |
 
 ### Qué incluye la fase 1
 
@@ -96,6 +99,26 @@ Estas reglas guían todo el código y no se negocian:
   explica cuál falta.
 - Una regla de ESLint que impide consultar la base fuera de `lib/datos/`.
 - Pruebas unitarias y de integración, ganchos de Git e integración continua en GitHub Actions.
+
+### Qué incluye la fase 2
+
+| Pieza                    | Qué hace                                                                                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Inicio de sesión**     | NextAuth v4 con sesiones JWT. Entra con Google si `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` están configuradas, o con el acceso de desarrollo en tu computadora.              |
+| **Acceso de desarrollo** | El botón "Entrar como desarrollador" entra con un usuario de prueba. Solo existe con `NODE_ENV=development` y `ACCESO_DESARROLLO=true`; si no, su ruta responde 404.            |
+| **Protección de rutas**  | `proxy.ts` manda a `/ingresar` a quien no tiene sesión, y al inicio a quien ya la tiene.                                                                                        |
+| **Siembra por usuario**  | Al crearse un usuario recibe, en una sola transacción, 15 categorías, sus ajustes por defecto, la cuenta Efectivo y 71 ideas de ingreso. Si algo falla, no queda nada a medias. |
+| **Menú lateral**         | Los cinco bloques de la especificación (Día a día, Futuro, Crecer, Entender y Herramientas), con el botón "Registrar" arriba. Por debajo de 1280 px se reduce a íconos.         |
+| **Tema**                 | Claro, oscuro o según el sistema. Se guarda en Ajustes y en una cookie, y se aplica antes de pintar la página para que no parpadee.                                             |
+
+Las secciones del menú muestran por ahora en qué fase se construyen.
+
+#### Por qué un adaptador de autenticación propio
+
+El adaptador oficial de Prisma para NextAuth crea el usuario y termina ahí. La especificación pide
+que el usuario y sus datos iniciales se creen juntos, así que `lib/datos/adaptador-auth.ts` crea el
+usuario y lo siembra dentro de la misma transacción. Con sesiones JWT solo hacen falta los métodos
+de usuario y de cuenta vinculada.
 
 ---
 
@@ -140,6 +163,12 @@ Tarea diaria 00:05 ─────────┘  recurrentes, foto mensual del
 ```
 
 El navegador solo habla con el servidor, y el servidor es el único que consulta la base.
+
+Es un **monolito modular**: una sola aplicación que se despliega como una unidad, con una sola
+base de datos, separada por dentro en capas con responsabilidades claras (páginas, capa de datos,
+fórmulas puras y autenticación). Para una app de un usuario, con costo cero como regla, es más
+simple y barato que repartirla en microservicios, y las capas dejan marcado dónde se podría
+separar algo si algún día hiciera falta.
 
 ### Reglas de arquitectura
 
@@ -223,6 +252,8 @@ la migración. La base rechaza el dato aunque un error de código intente guarda
 | Prisma ORM          | 7.10.1         | Esquema tipado, migraciones versionadas y acceso a datos.                       | https://www.prisma.io/docs           |
 | node-postgres       | 8.23.1         | Controlador de PostgreSQL que usa Prisma.                                       | https://node-postgres.com/           |
 | Zod                 | 4.6.7          | Validación de variables de entorno, formularios y acciones.                     | https://zod.dev/                     |
+| NextAuth            | 4.24.15        | Inicio de sesión con Google y acceso de desarrollo, con sesiones JWT.           | https://next-auth.js.org/            |
+| Lucide              | 1.77.0         | Íconos del menú y de los botones.                                               | https://lucide.dev/                  |
 | Vitest              | 5.1.0          | Pruebas unitarias y de integración.                                             | https://vitest.dev/                  |
 | ESLint              | 10.15.0        | Análisis estático del código.                                                   | https://eslint.org/docs/latest/      |
 | Prettier            | 3.10.1         | Formato uniforme del código.                                                    | https://prettier.io/docs/            |
@@ -230,14 +261,17 @@ la migración. La base rechaza el dato aunque un error de código intente guarda
 | Docker Compose      | 5              | PostgreSQL local, igual al de CI y producción.                                  | https://docs.docker.com/compose/     |
 | GitHub Actions      | —              | Integración continua en cada push.                                              | https://docs.github.com/actions      |
 
-Las versiones son las estables vigentes al crear el proyecto. Dos decisiones merecen explicación:
+Las versiones son las estables vigentes al crear el proyecto. Tres decisiones merecen explicación:
 
 - **TypeScript 6.0 y no 7.** La versión 7 ya existe, pero `typescript-eslint` todavía no la
   soporta.
 - **Prisma 7.10.1.** La etiqueta `latest` de npm apuntaba a una versión candidata (8.0 rc), no a una
   estable.
 
-Llegarán en las fases siguientes: NextAuth (autenticación), shadcn/ui sobre Radix (componentes
+- **NextAuth 4 y no Auth.js 5.** La versión 5 sigue en beta; la 4 es la rama estable y ya
+  soporta Next.js 16 y React 19.
+
+Llegarán en las fases siguientes: shadcn/ui sobre Radix (componentes
 accesibles), React Hook Form (formularios), date-fns (fechas), Apache ECharts (gráficos),
 Playwright (pruebas de extremo a extremo) y Sentry (monitoreo opcional).
 
@@ -248,21 +282,37 @@ Playwright (pruebas de extremo a extremo) y Sentry (monitoreo opcional).
 ```text
 proyecto-finanzas/
 ├── app/                          # Rutas de Next.js (App Router)
-│   ├── layout.tsx                # Idioma, tipografía y estilos globales
-│   ├── page.tsx                  # Página de inicio provisional
-│   └── globals.css               # Tokens de color en modo claro y oscuro
+│   ├── layout.tsx                # Idioma, tipografía, estilos y script del tema
+│   ├── globals.css               # Tokens de color en modo claro y oscuro
+│   ├── (auth)/ingresar/          # Pantalla de inicio de sesión
+│   ├── (app)/                    # Todo lo que requiere sesión: menú lateral y secciones
+│   │   ├── layout.tsx            # Menú lateral + contenido de hasta 1280 px
+│   │   ├── page.tsx              # Inicio provisional con lo que dejó la siembra
+│   │   └── acciones.ts           # Server Action del tema
+│   └── api/auth/[...nextauth]/   # Rutas de NextAuth (404 para el proveedor de desarrollo fuera de él)
+├── components/
+│   ├── menu/                     # Menú lateral, bloques, selector de tema y cerrar sesión
+│   └── en-construccion.tsx       # Página provisional de cada sección
 ├── lib/
 │   ├── env.ts                    # Validación de variables de entorno
-│   └── datos/
-│       └── prisma.ts             # Cliente único de la base (solo lo usa lib/datos/)
+│   ├── fechas.ts                 # Fecha de hoy en Ecuador (se completa en la fase 3)
+│   ├── tema.ts                   # Temas, cookie y script que evita el parpadeo
+│   ├── auth/                     # Opciones de NextAuth, sesión y regla del acceso de desarrollo
+│   ├── semillas/                 # Datos iniciales: categorías, ajustes e ideas de ingreso
+│   └── datos/                    # Única capa que consulta la base
+│       ├── prisma.ts             # Cliente único de la base
+│       ├── siembra.ts            # Crea el usuario y siembra sus datos en una transacción
+│       ├── adaptador-auth.ts     # Adaptador de NextAuth que siembra al crear el usuario
+│       └── ...                   # Categorías, cuentas, ajustes y resumen, filtrados por sesión
+├── proxy.ts                      # Manda a /ingresar a quien no tiene sesión
 ├── prisma/
 │   ├── schema.prisma             # Esquema completo de la base
 │   ├── migrations/               # Migraciones versionadas, con el SQL de las restricciones
 │   └── seed.ts                   # Datos globales: parámetros del SRI 2026
 ├── tests/
-│   ├── env.test.ts               # Pruebas unitarias del entorno
-│   └── integracion/
-│       └── restricciones.test.ts # Pruebas contra PostgreSQL real
+│   ├── *.test.ts                 # Pruebas unitarias
+│   ├── integracion/              # Pruebas contra PostgreSQL real
+│   └── produccion/               # Prueba sobre el build de producción
 ├── docs/
 │   └── ESPECIFICACION.md         # Especificación completa: la fuente de verdad
 ├── .github/workflows/ci.yml      # Integración continua
@@ -276,8 +326,8 @@ proyecto-finanzas/
 └── package.json
 ```
 
-A medida que avancen las fases se sumarán `app/(app)/` con las pantallas, `components/`,
-`lib/calculos/`, `lib/reglas/`, `lib/insights/`, `lib/dinero.ts`, `lib/fechas.ts` y `e2e/`.
+A medida que avancen las fases se sumarán `lib/calculos/`, `lib/reglas/`, `lib/insights/`,
+`lib/dinero.ts` y `e2e/`.
 
 ---
 
@@ -301,26 +351,39 @@ npm run db:sembrar            # carga los parámetros del SRI 2026
 npm run dev                   # abre http://localhost:3000
 ```
 
+Con `ACCESO_DESARROLLO=true` en `.env`, la pantalla de ingreso muestra **"Entrar como
+desarrollador"**. La primera vez crea el usuario de prueba y le siembra sus datos; el inicio
+muestra entonces 15 categorías, la cuenta Efectivo y 71 ideas de ingreso.
+
+### Inicio de sesión con Google (opcional)
+
+1. En [Google Cloud Console](https://console.cloud.google.com/apis/credentials), crea un ID de
+   cliente de OAuth de tipo **Aplicación web**. Es gratis.
+2. En **URI de redireccionamiento autorizados** agrega
+   `http://localhost:3000/api/auth/callback/google` (y la de producción cuando despliegues).
+3. Copia el ID y el secreto en `GOOGLE_CLIENT_ID` y `GOOGLE_CLIENT_SECRET` y reinicia `npm run dev`.
+
 PostgreSQL usa el puerto **5433** para no chocar con una instalación nativa de PostgreSQL que
 ocupe el 5432. Si quieres otro, cámbialo en `POSTGRES_PORT` y en `DATABASE_URL`.
 
 ### Comandos disponibles
 
-| Comando                  | Qué hace                                                               |
-| ------------------------ | ---------------------------------------------------------------------- |
-| `npm run dev`            | Servidor de desarrollo en `http://localhost:3000`.                     |
-| `npm run build`          | Build de producción.                                                   |
-| `npm start`              | Sirve el build de producción.                                          |
-| `npm run lint`           | ESLint, sin advertencias permitidas.                                   |
-| `npm run typecheck`      | Genera los tipos de las rutas y revisa TypeScript.                     |
-| `npm run format`         | Da formato a todo el código con Prettier.                              |
-| `npm run format:check`   | Verifica el formato sin modificar archivos.                            |
-| `npm test`               | Pruebas unitarias.                                                     |
-| `npm run test:cobertura` | Pruebas unitarias con informe de cobertura.                            |
-| `npm run test:db`        | Pruebas de integración contra PostgreSQL (requiere la base levantada). |
-| `npm run db:migrar`      | Crea y aplica migraciones en desarrollo.                               |
-| `npm run db:desplegar`   | Aplica las migraciones pendientes, sin crear nuevas (CI y producción). |
-| `npm run db:sembrar`     | Carga los datos globales. Se puede correr varias veces.                |
+| Comando                   | Qué hace                                                               |
+| ------------------------- | ---------------------------------------------------------------------- |
+| `npm run dev`             | Servidor de desarrollo en `http://localhost:3000`.                     |
+| `npm run build`           | Build de producción.                                                   |
+| `npm start`               | Sirve el build de producción.                                          |
+| `npm run lint`            | ESLint, sin advertencias permitidas.                                   |
+| `npm run typecheck`       | Genera los tipos de las rutas y revisa TypeScript.                     |
+| `npm run format`          | Da formato a todo el código con Prettier.                              |
+| `npm run format:check`    | Verifica el formato sin modificar archivos.                            |
+| `npm test`                | Pruebas unitarias.                                                     |
+| `npm run test:cobertura`  | Pruebas unitarias con informe de cobertura.                            |
+| `npm run test:db`         | Pruebas de integración contra PostgreSQL (requiere la base levantada). |
+| `npm run test:produccion` | Prueba del build de producción (requiere `npm run build` antes).       |
+| `npm run db:migrar`       | Crea y aplica migraciones en desarrollo.                               |
+| `npm run db:desplegar`    | Aplica las migraciones pendientes, sin crear nuevas (CI y producción). |
+| `npm run db:sembrar`      | Carga los datos globales. Se puede correr varias veces.                |
 
 ---
 
@@ -352,19 +415,26 @@ openssl rand -hex 24      # CRON_SECRET
 ## Pruebas
 
 ```bash
-npm test          # unitarias
-npm run test:db   # integración (con docker compose up)
+npm test                                  # unitarias
+npm run test:db                           # integración (con docker compose up)
+npm run build && npm run test:produccion  # build de producción
 ```
 
-Las pruebas están separadas en dos proyectos de Vitest: las **unitarias** no necesitan base de
-datos y corren en milisegundos, y las **de integración** se conectan a un PostgreSQL real para
-comprobar lo que solo la base puede garantizar.
+Las pruebas están separadas en tres proyectos de Vitest: las **unitarias** no necesitan base de
+datos y corren en milisegundos, las **de integración** se conectan a un PostgreSQL real para
+comprobar lo que solo la base puede garantizar, y la **de producción** levanta el build real.
 
-| Grupo             | Archivo                                   |  Casos | Qué garantiza                                                                                                                                                                                                                                                                             |
-| ----------------- | ----------------------------------------- | -----: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Entorno**       | `tests/env.test.ts`                       |      7 | Que la app no arranque con una configuración inválida: clave faltante o vacía, URL que no es de PostgreSQL, secretos cortos, `ACCESO_DESARROLLO` con un valor distinto de `true` o `false`, y Google con una sola de sus dos claves.                                                      |
-| **Restricciones** | `tests/integracion/restricciones.test.ts` |     12 | Que la base rechace montos en cero o de más de $1.000.000, transferencias inválidas, recurrentes duplicados, un segundo fondo de emergencia y una segunda foto automática del mes; que no se pueda borrar una categoría con movimientos, y que borrar un usuario elimine todos sus datos. |
-| **Total**         |                                           | **19** |                                                                                                                                                                                                                                                                                           |
+| Grupo             | Archivo                                      |  Casos | Qué garantiza                                                                                                                                                                                                                                                                             |
+| ----------------- | -------------------------------------------- | -----: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Entorno**       | `tests/env.test.ts`                          |      7 | Que la app no arranque con una configuración inválida: clave faltante o vacía, URL que no es de PostgreSQL, secretos cortos, `ACCESO_DESARROLLO` con un valor distinto de `true` o `false`, y Google con una sola de sus dos claves.                                                      |
+| **Restricciones** | `tests/integracion/restricciones.test.ts`    |     12 | Que la base rechace montos en cero o de más de $1.000.000, transferencias inválidas, recurrentes duplicados, un segundo fondo de emergencia y una segunda foto automática del mes; que no se pueda borrar una categoría con movimientos, y que borrar un usuario elimine todos sus datos. |
+| **Semillas**      | `tests/semillas.test.ts`                     |     14 | Que las 15 categorías, las 71 ideas (12 de tecnología, 3 generales y 4 por cada una de las 14 áreas) y los ajustes iniciales coincidan con la especificación, sin montos inventados en ninguna idea.                                                                                      |
+| **Autenticación** | `tests/auth.test.ts`                         |      7 | Que el acceso de desarrollo solo exista con `NODE_ENV=development` y `ACCESO_DESARROLLO=true`, y que el tema solo acepte valores válidos.                                                                                                                                                 |
+| **Fechas**        | `tests/fechas.test.ts`                       |      3 | Que "hoy" se calcule en la hora de Ecuador, también cerca de medianoche.                                                                                                                                                                                                                  |
+| **Siembra**       | `tests/integracion/siembra.test.ts`          |      6 | Que un usuario nuevo, por Google o por el acceso de desarrollo, reciba todos sus datos iniciales; que sembrar dos veces no duplique nada, y que un fallo no deje un usuario a medias.                                                                                                     |
+| **Aislamiento**   | `tests/integracion/aislamiento.test.ts`      |      4 | Que un usuario no pueda leer ni modificar datos de otro, aunque conozca sus identificadores.                                                                                                                                                                                              |
+| **Producción**    | `tests/produccion/acceso-desarrollo.test.ts` |      4 | Que en el build de producción el botón de desarrollo no aparezca y su ruta responda 404, aunque `ACCESO_DESARROLLO` valga `true`, y que sin sesión el inicio mande a `/ingresar`.                                                                                                         |
+| **Total**         |                                              | **57** |                                                                                                                                                                                                                                                                                           |
 
 ### Por qué importan las pruebas de integración
 
@@ -401,6 +471,7 @@ GitHub Actions ejecuta, en este orden, sobre un PostgreSQL 18 temporal:
 7. Semilla.
 8. Pruebas de integración.
 9. Build de producción.
+10. Prueba de que el acceso de desarrollo no existe en ese build.
 
 Los secretos de la CI no están escritos en el código: se toman de los secretos de GitHub si
 existen y, si no, se generan al azar en cada ejecución.
@@ -440,7 +511,9 @@ viven dentro de la app. Si un servicio cambia sus condiciones, la app sigue func
 - Ningún dato financiero se envía a servicios de terceros.
 - Las semillas y las pruebas usan datos ficticios, nunca datos reales.
 - El acceso de desarrollo solo existe con `NODE_ENV=development` y `ACCESO_DESARROLLO=true`. En
-  cualquier otro caso su ruta responde 404, y una prueba lo verificará en el build de producción.
+  cualquier otro caso su ruta responde 404, y una prueba lo verifica en el build de producción.
+- Cada usuario solo ve sus datos: la capa `lib/datos/` toma el usuario de la sesión, nunca de la
+  pantalla, y una prueba intenta leer los datos de otro usuario por su id.
 
 ---
 

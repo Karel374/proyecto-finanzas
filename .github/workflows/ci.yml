@@ -89,3 +89,6 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: El acceso de desarrollo no existe en producción
+        run: npm run test:produccion
