@@ -1,16 +1,15 @@
-import type { Tema } from "@/generated/prisma/client";
-import { usuarioIdActual } from "@/lib/auth/sesion";
+import type { TemaApp } from "@/lib/tema";
 
-import { prisma } from "./prisma";
+import { datosDelUsuario } from "./cliente";
 
 /** Ajustes del usuario de la sesión (uno por usuario, creado en la siembra). */
 export async function obtenerAjustes() {
-  const usuarioId = await usuarioIdActual();
-  return prisma.ajustes.findUnique({ where: { usuarioId } });
+  const db = await datosDelUsuario();
+  return db.ajustes.findFirst();
 }
 
 /** Cambia el tema del usuario de la sesión. */
-export async function guardarTema(tema: Tema) {
-  const usuarioId = await usuarioIdActual();
-  await prisma.ajustes.update({ where: { usuarioId }, data: { tema } });
+export async function guardarTema(tema: TemaApp) {
+  const db = await datosDelUsuario();
+  await db.ajustes.updateMany({ data: { tema } });
 }

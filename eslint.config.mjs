@@ -37,6 +37,36 @@ const eslintConfig = defineConfig([
     files: ["lib/datos/**", "prisma/**", "tests/integracion/**"],
     rules: { "no-restricted-imports": "off" },
   },
+  {
+    // Dentro de lib/datos/, los módulos de cada entidad usan el cliente del usuario (cliente.ts),
+    // que filtra solo por usuarioId. El cliente crudo queda para la infraestructura.
+    files: ["lib/datos/**"],
+    ignores: [
+      "lib/datos/prisma.ts",
+      "lib/datos/cliente.ts",
+      "lib/datos/siembra.ts",
+      "lib/datos/adaptador-auth.ts",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: [
+                "./prisma",
+                "@/lib/datos/prisma",
+                "@/generated/prisma/client",
+                "**/generated/prisma/client",
+              ],
+              allowTypeImports: true,
+              message: "Usa datosDelUsuario() de ./cliente: filtra por el usuario de la sesión sin olvidos.",
+            },
+          ],
+        },
+      ],
+    },
+  },
   globalIgnores([".next/**", "out/**", "build/**", "coverage/**", "generated/**", "next-env.d.ts"]),
 ]);
 

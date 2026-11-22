@@ -4,11 +4,11 @@
  */
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-const sesion = vi.hoisted(() => ({ usuarioId: "" }));
+const sesion = vi.hoisted(() => ({ usuarioId: "", nombre: "" }));
 
 vi.mock("@/lib/auth/sesion", () => ({
   usuarioIdActual: async () => sesion.usuarioId,
-  obtenerSesion: async () => ({ user: { id: sesion.usuarioId } }),
+  obtenerSesion: async () => ({ user: { id: sesion.usuarioId, name: sesion.nombre } }),
 }));
 
 import { guardarTema, obtenerAjustes } from "@/lib/datos/ajustes";
@@ -69,6 +69,7 @@ describe("aislamiento entre usuarios", () => {
 
   it("el resumen del inicio es el del usuario de la sesión", async () => {
     sesion.usuarioId = beto;
+    sesion.nombre = "Beto";
     const resumen = await resumenDelUsuario();
     expect(resumen.nombre).toBe("Beto");
     expect(resumen).toMatchObject({ categorias: 15, cuentas: ["Efectivo"], ideas: 71 });

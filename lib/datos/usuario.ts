@@ -1,19 +1,18 @@
-import { usuarioIdActual } from "@/lib/auth/sesion";
+import { obtenerSesion } from "@/lib/auth/sesion";
 
-import { prisma } from "./prisma";
+import { datosDelUsuario } from "./cliente";
 
 /** Nombre y conteos de lo sembrado para el usuario de la sesión. Lo usa el panel de bienvenida. */
 export async function resumenDelUsuario() {
-  const usuarioId = await usuarioIdActual();
-  const [usuario, ajustes, categorias, cuentas, ideas] = await Promise.all([
-    prisma.user.findUnique({ where: { id: usuarioId }, select: { name: true, email: true } }),
-    prisma.ajustes.findUnique({ where: { usuarioId }, select: { nombre: true, tema: true } }),
-    prisma.categoria.count({ where: { usuarioId, archivada: false } }),
-    prisma.cuenta.findMany({ where: { usuarioId, archivada: false }, select: { nombre: true } }),
-    prisma.ideaIngreso.count({ where: { usuarioId } }),
+  const [db, sesion] = await Promise.all([datosDelUsuario(), obtenerSesion()]);
+  const [ajustes, categorias, cuentas, ideas] = await Promise.all([
+    db.ajustes.findFirst({ select: { nombre: true, tema: true } }),
+    db.categoria.count({ where: { archivada: false } }),
+    db.cuenta.findMany({ where: { archivada: false }, select: { nombre: true } }),
+    db.ideaIngreso.count(),
   ]);
   return {
-    nombre: ajustes?.nombre ?? usuario?.name ?? usuario?.email ?? "",
+    nombre: ajustes?.nombre ?? sesion?.user?.name ?? sesion?.user?.email ?? "",
     tema: ajustes?.tema ?? "SISTEMA",
     categorias,
     cuentas: cuentas.map((cuenta) => cuenta.nombre),

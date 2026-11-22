@@ -7,9 +7,10 @@ gastos deducibles del SRI y recibir recomendaciones que siempre explican de dón
 `Next.js 16` · `TypeScript estricto` · `PostgreSQL 18` · `Prisma 7` · `Costo de operación: $0`
 
 > Proyecto personal en construcción. Se desarrolla por fases (ver [Hoja de ruta](#hoja-de-ruta)).
-> Hoy están terminadas la **fase 1, base del proyecto**, y la **fase 2, autenticación y
-> siembra**: ya se puede entrar, cada usuario nuevo recibe sus datos iniciales y el menú lateral
-> está completo, pero las secciones todavía no tienen pantallas de uso ni cálculos. Las
+> Hoy están terminadas las fases **1 (base)**, **2 (autenticación y siembra)** y **3 (núcleo)**:
+> ya se puede entrar, cada usuario nuevo recibe sus datos iniciales, el menú lateral está completo
+> y existen las reglas de dinero, fechas y acceso a datos sobre las que se construye todo lo demás,
+> pero las secciones todavía no tienen pantallas de uso. Las
 > recomendaciones de la app serán educativas y no reemplazan la asesoría de un profesional ni la
 > consulta al SRI.
 
@@ -86,7 +87,8 @@ Estas reglas guían todo el código y no se negocian:
 | -------------------------- | ------------- |
 | 1. Base                    | **Terminada** |
 | 2. Autenticación y siembra | **Terminada** |
-| 3 a 16                     | Pendientes    |
+| 3. Núcleo                  | **Terminada** |
+| 4 a 16                     | Pendientes    |
 
 ### Qué incluye la fase 1
 
@@ -119,6 +121,35 @@ El adaptador oficial de Prisma para NextAuth crea el usuario y termina ahí. La 
 que el usuario y sus datos iniciales se creen juntos, así que `lib/datos/adaptador-auth.ts` crea el
 usuario y lo siembra dentro de la misma transacción. Con sesiones JWT solo hacen falta los métodos
 de usuario y de cuenta vinculada.
+
+### Qué incluye la fase 3
+
+| Pieza                   | Qué hace                                                                                                                                                                                                                        |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`lib/dinero.ts`**     | Formato `$1.234,50` de Ecuador, signo − o + según el tipo, porcentajes con un decimal (`12,5 %`), divisiones redondeadas al centavo, "Sin datos" al dividir para cero, y la lectura de lo que escribe el usuario a centavos.    |
+| **`lib/fechas.ts`**     | "Hoy" en la hora de Ecuador, semanas de lunes a domingo, los períodos Hoy, Esta semana, Este mes, Este año y Rango, días transcurridos y restantes, el período anterior para comparar y el ajuste del día 31 al último del mes. |
+| **Cliente del usuario** | `lib/datos/cliente.ts` agrega `usuarioId` a toda lectura, actualización y borrado, y lo fuerza en toda creación. Un id de otro usuario se comporta como si no existiera.                                                        |
+| **Acciones tipadas**    | `lib/acciones.ts` valida cada Server Action con Zod y responde siempre con un resultado tipado: los datos, o un código de error con su mensaje en español y el error de cada campo.                                             |
+
+#### Cómo se lee un monto
+
+El usuario puede escribir el monto como lo hace en Ecuador o como lo copió de otro lado. La regla
+es fija y está probada:
+
+| Escribe    | Se guarda        | Por qué                                                   |
+| ---------- | ---------------- | --------------------------------------------------------- |
+| `45,50`    | 4.550 centavos   | Solo con coma, la coma es decimal.                        |
+| `45.50`    | 4.550 centavos   | Solo con punto y sin grupos de tres, el punto es decimal. |
+| `1.234`    | 123.400 centavos | Solo con punto y en grupos de tres, el punto es de miles. |
+| `1.234,56` | 123.456 centavos | Con los dos, el último que aparece es el decimal.         |
+| `12,345`   | Se rechaza       | Serían tres decimales.                                    |
+
+#### Por qué un cliente del usuario y no un filtro en cada consulta
+
+Escribir `where: { usuarioId }` a mano en cada consulta funciona hasta el día en que alguien lo
+olvida. El cliente del usuario lo agrega solo, y una regla de ESLint impide que los módulos de
+`lib/datos/` usen el cliente crudo de Prisma. Solo cuatro archivos de infraestructura pueden
+hacerlo: el propio cliente, la conexión, la siembra y el adaptador de autenticación.
 
 ---
 
@@ -241,25 +272,26 @@ la migración. La base rechaza el dato aunque un error de código intente guarda
 
 ## Tecnologías utilizadas
 
-| Tecnología          | Versión        | Uso en el proyecto                                                              | Documentación                        |
-| ------------------- | -------------- | ------------------------------------------------------------------------------- | ------------------------------------ |
-| Node.js             | 24             | Entorno de ejecución.                                                           | https://nodejs.org/docs/             |
-| Next.js             | 16.4.6         | Interfaz, Server Components, Server Actions y rutas de API en un solo proyecto. | https://nextjs.org/docs              |
-| React               | 19.3.1         | Componentes de la interfaz.                                                     | https://react.dev/                   |
-| TypeScript          | 6.0.3          | Tipado estricto en todo el código.                                              | https://www.typescriptlang.org/docs/ |
-| Tailwind CSS        | 4.3.5          | Estilos a partir de los tokens de color del diseño.                             | https://tailwindcss.com/docs         |
-| PostgreSQL          | 18             | Base de datos, con `DATE`, `ENUM`, `TIMESTAMPTZ`, restricciones e índices.      | https://www.postgresql.org/docs/     |
-| Prisma ORM          | 7.10.1         | Esquema tipado, migraciones versionadas y acceso a datos.                       | https://www.prisma.io/docs           |
-| node-postgres       | 8.23.1         | Controlador de PostgreSQL que usa Prisma.                                       | https://node-postgres.com/           |
-| Zod                 | 4.6.7          | Validación de variables de entorno, formularios y acciones.                     | https://zod.dev/                     |
-| NextAuth            | 4.24.15        | Inicio de sesión con Google y acceso de desarrollo, con sesiones JWT.           | https://next-auth.js.org/            |
-| Lucide              | 1.77.0         | Íconos del menú y de los botones.                                               | https://lucide.dev/                  |
-| Vitest              | 5.1.0          | Pruebas unitarias y de integración.                                             | https://vitest.dev/                  |
-| ESLint              | 10.15.0        | Análisis estático del código.                                                   | https://eslint.org/docs/latest/      |
-| Prettier            | 3.10.1         | Formato uniforme del código.                                                    | https://prettier.io/docs/            |
-| Husky y lint-staged | 9.1.7 y 17.6.1 | Revisión automática antes de cada commit.                                       | https://typicode.github.io/husky/    |
-| Docker Compose      | 5              | PostgreSQL local, igual al de CI y producción.                                  | https://docs.docker.com/compose/     |
-| GitHub Actions      | —              | Integración continua en cada push.                                              | https://docs.github.com/actions      |
+| Tecnología              | Versión        | Uso en el proyecto                                                              | Documentación                        |
+| ----------------------- | -------------- | ------------------------------------------------------------------------------- | ------------------------------------ |
+| Node.js                 | 24             | Entorno de ejecución.                                                           | https://nodejs.org/docs/             |
+| Next.js                 | 16.4.6         | Interfaz, Server Components, Server Actions y rutas de API en un solo proyecto. | https://nextjs.org/docs              |
+| React                   | 19.3.1         | Componentes de la interfaz.                                                     | https://react.dev/                   |
+| TypeScript              | 6.0.3          | Tipado estricto en todo el código.                                              | https://www.typescriptlang.org/docs/ |
+| Tailwind CSS            | 4.3.5          | Estilos a partir de los tokens de color del diseño.                             | https://tailwindcss.com/docs         |
+| PostgreSQL              | 18             | Base de datos, con `DATE`, `ENUM`, `TIMESTAMPTZ`, restricciones e índices.      | https://www.postgresql.org/docs/     |
+| Prisma ORM              | 7.10.1         | Esquema tipado, migraciones versionadas y acceso a datos.                       | https://www.prisma.io/docs           |
+| node-postgres           | 8.23.1         | Controlador de PostgreSQL que usa Prisma.                                       | https://node-postgres.com/           |
+| Zod                     | 4.6.7          | Validación de variables de entorno, formularios y acciones.                     | https://zod.dev/                     |
+| NextAuth                | 4.24.15        | Inicio de sesión con Google y acceso de desarrollo, con sesiones JWT.           | https://next-auth.js.org/            |
+| Lucide                  | 1.77.0         | Íconos del menú y de los botones.                                               | https://lucide.dev/                  |
+| date-fns y @date-fns/tz | 4.4.0 y 1.5.0  | Aritmética de fechas, semanas de lunes a domingo y la zona de Ecuador.          | https://date-fns.org/                |
+| Vitest                  | 5.1.0          | Pruebas unitarias y de integración.                                             | https://vitest.dev/                  |
+| ESLint                  | 10.15.0        | Análisis estático del código.                                                   | https://eslint.org/docs/latest/      |
+| Prettier                | 3.10.1         | Formato uniforme del código.                                                    | https://prettier.io/docs/            |
+| Husky y lint-staged     | 9.1.7 y 17.6.1 | Revisión automática antes de cada commit.                                       | https://typicode.github.io/husky/    |
+| Docker Compose          | 5              | PostgreSQL local, igual al de CI y producción.                                  | https://docs.docker.com/compose/     |
+| GitHub Actions          | —              | Integración continua en cada push.                                              | https://docs.github.com/actions      |
 
 Las versiones son las estables vigentes al crear el proyecto. Tres decisiones merecen explicación:
 
@@ -272,7 +304,7 @@ Las versiones son las estables vigentes al crear el proyecto. Tres decisiones me
   soporta Next.js 16 y React 19.
 
 Llegarán en las fases siguientes: shadcn/ui sobre Radix (componentes
-accesibles), React Hook Form (formularios), date-fns (fechas), Apache ECharts (gráficos),
+accesibles), React Hook Form (formularios), Apache ECharts (gráficos),
 Playwright (pruebas de extremo a extremo) y Sentry (monitoreo opcional).
 
 ---
@@ -295,12 +327,15 @@ proyecto-finanzas/
 │   └── en-construccion.tsx       # Página provisional de cada sección
 ├── lib/
 │   ├── env.ts                    # Validación de variables de entorno
-│   ├── fechas.ts                 # Fecha de hoy en Ecuador (se completa en la fase 3)
+│   ├── dinero.ts                 # Centavos, formato de montos y porcentajes, lectura de montos
+│   ├── fechas.ts                 # Hoy en Ecuador, semanas, meses, períodos y comparación
+│   ├── acciones.ts               # Server Actions validadas con Zod y errores tipados
 │   ├── tema.ts                   # Temas, cookie y script que evita el parpadeo
 │   ├── auth/                     # Opciones de NextAuth, sesión y regla del acceso de desarrollo
 │   ├── semillas/                 # Datos iniciales: categorías, ajustes e ideas de ingreso
 │   └── datos/                    # Única capa que consulta la base
-│       ├── prisma.ts             # Cliente único de la base
+│       ├── prisma.ts             # Conexión única a la base (cliente crudo)
+│       ├── cliente.ts            # Cliente del usuario: pone usuarioId en toda operación
 │       ├── siembra.ts            # Crea el usuario y siembra sus datos en una transacción
 │       ├── adaptador-auth.ts     # Adaptador de NextAuth que siembra al crear el usuario
 │       └── ...                   # Categorías, cuentas, ajustes y resumen, filtrados por sesión
@@ -326,8 +361,8 @@ proyecto-finanzas/
 └── package.json
 ```
 
-A medida que avancen las fases se sumarán `lib/calculos/`, `lib/reglas/`, `lib/insights/`,
-`lib/dinero.ts` y `e2e/`.
+A medida que avancen las fases se sumarán `lib/calculos/`, `lib/reglas/`, `lib/insights/` y
+`e2e/`.
 
 ---
 
@@ -424,17 +459,20 @@ Las pruebas están separadas en tres proyectos de Vitest: las **unitarias** no n
 datos y corren en milisegundos, las **de integración** se conectan a un PostgreSQL real para
 comprobar lo que solo la base puede garantizar, y la **de producción** levanta el build real.
 
-| Grupo             | Archivo                                      |  Casos | Qué garantiza                                                                                                                                                                                                                                                                             |
-| ----------------- | -------------------------------------------- | -----: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Entorno**       | `tests/env.test.ts`                          |      7 | Que la app no arranque con una configuración inválida: clave faltante o vacía, URL que no es de PostgreSQL, secretos cortos, `ACCESO_DESARROLLO` con un valor distinto de `true` o `false`, y Google con una sola de sus dos claves.                                                      |
-| **Restricciones** | `tests/integracion/restricciones.test.ts`    |     12 | Que la base rechace montos en cero o de más de $1.000.000, transferencias inválidas, recurrentes duplicados, un segundo fondo de emergencia y una segunda foto automática del mes; que no se pueda borrar una categoría con movimientos, y que borrar un usuario elimine todos sus datos. |
-| **Semillas**      | `tests/semillas.test.ts`                     |     14 | Que las 15 categorías, las 71 ideas (12 de tecnología, 3 generales y 4 por cada una de las 14 áreas) y los ajustes iniciales coincidan con la especificación, sin montos inventados en ninguna idea.                                                                                      |
-| **Autenticación** | `tests/auth.test.ts`                         |      7 | Que el acceso de desarrollo solo exista con `NODE_ENV=development` y `ACCESO_DESARROLLO=true`, y que el tema solo acepte valores válidos.                                                                                                                                                 |
-| **Fechas**        | `tests/fechas.test.ts`                       |      3 | Que "hoy" se calcule en la hora de Ecuador, también cerca de medianoche.                                                                                                                                                                                                                  |
-| **Siembra**       | `tests/integracion/siembra.test.ts`          |      6 | Que un usuario nuevo, por Google o por el acceso de desarrollo, reciba todos sus datos iniciales; que sembrar dos veces no duplique nada, y que un fallo no deje un usuario a medias.                                                                                                     |
-| **Aislamiento**   | `tests/integracion/aislamiento.test.ts`      |      4 | Que un usuario no pueda leer ni modificar datos de otro, aunque conozca sus identificadores.                                                                                                                                                                                              |
-| **Producción**    | `tests/produccion/acceso-desarrollo.test.ts` |      4 | Que en el build de producción el botón de desarrollo no aparezca y su ruta responda 404, aunque `ACCESO_DESARROLLO` valga `true`, y que sin sesión el inicio mande a `/ingresar`.                                                                                                         |
-| **Total**         |                                              | **57** |                                                                                                                                                                                                                                                                                           |
+| Grupo                   | Archivo                                      |   Casos | Qué garantiza                                                                                                                                                                                                                                                                             |
+| ----------------------- | -------------------------------------------- | ------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Entorno**             | `tests/env.test.ts`                          |       7 | Que la app no arranque con una configuración inválida: clave faltante o vacía, URL que no es de PostgreSQL, secretos cortos, `ACCESO_DESARROLLO` con un valor distinto de `true` o `false`, y Google con una sola de sus dos claves.                                                      |
+| **Restricciones**       | `tests/integracion/restricciones.test.ts`    |      12 | Que la base rechace montos en cero o de más de $1.000.000, transferencias inválidas, recurrentes duplicados, un segundo fondo de emergencia y una segunda foto automática del mes; que no se pueda borrar una categoría con movimientos, y que borrar un usuario elimine todos sus datos. |
+| **Semillas**            | `tests/semillas.test.ts`                     |      14 | Que las 15 categorías, las 71 ideas (12 de tecnología, 3 generales y 4 por cada una de las 14 áreas) y los ajustes iniciales coincidan con la especificación, sin montos inventados en ninguna idea.                                                                                      |
+| **Autenticación**       | `tests/auth.test.ts`                         |       7 | Que el acceso de desarrollo solo exista con `NODE_ENV=development` y `ACCESO_DESARROLLO=true`, y que el tema solo acepte valores válidos.                                                                                                                                                 |
+| **Fechas**              | `tests/fechas.test.ts`                       |      53 | Los tres criterios de la fase 3: semanas de lunes a domingo (también cruzando de mes y de año), "hoy" en Ecuador a las 23:59 y a las 00:00, y meses de 28, 29, 30 y 31 días con el día 31 ajustado. Además, los períodos y su comparación con el anterior.                                |
+| **Dinero**              | `tests/dinero.test.ts`                       |      45 | El formato `$1.234,50` de Ecuador, el signo − y +, los porcentajes con un decimal, el redondeo al centavo, "Sin datos" al dividir para cero, y cómo se lee cada forma de escribir un monto.                                                                                               |
+| **Acciones**            | `tests/acciones.test.ts`                     |       9 | Que una Server Action rechace datos inválidos con el mensaje de cada campo, traduzca los errores de la base y nunca deje escapar detalles internos.                                                                                                                                       |
+| **Siembra**             | `tests/integracion/siembra.test.ts`          |       6 | Que un usuario nuevo, por Google o por el acceso de desarrollo, reciba todos sus datos iniciales; que sembrar dos veces no duplique nada, y que un fallo no deje un usuario a medias.                                                                                                     |
+| **Aislamiento**         | `tests/integracion/aislamiento.test.ts`      |       4 | Que un usuario no pueda leer ni modificar datos de otro, aunque conozca sus identificadores.                                                                                                                                                                                              |
+| **Cliente del usuario** | `tests/integracion/cliente-usuario.test.ts`  |      12 | Que cada operación de la base (leer, contar, agrupar, crear, actualizar, borrar y upsert) quede atada al usuario, aunque el código pida a propósito el `usuarioId` de otro.                                                                                                               |
+| **Producción**          | `tests/produccion/acceso-desarrollo.test.ts` |       4 | Que en el build de producción el botón de desarrollo no aparezca y su ruta responda 404, aunque `ACCESO_DESARROLLO` valga `true`, y que sin sesión el inicio mande a `/ingresar`.                                                                                                         |
+| **Total**               |                                              | **173** |                                                                                                                                                                                                                                                                                           |
 
 ### Por qué importan las pruebas de integración
 
