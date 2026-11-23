@@ -4,7 +4,8 @@ import { expect, test, type Page } from "@playwright/test";
 async function entrar(page: Page) {
   await page.goto("/ingresar");
   await page.getByRole("button", { name: "Entrar como desarrollador" }).click();
-  await expect(page.getByRole("navigation", { name: "Secciones" })).toBeVisible();
+  // `next dev` compila cada página la primera vez que se pide: en la CI eso puede pasar de 5 s.
+  await expect(page.getByRole("navigation", { name: "Secciones" })).toBeVisible({ timeout: 30_000 });
 }
 
 /** Un monto distinto en cada corrida, para encontrar la fila sin confundirla con otras. */
@@ -16,7 +17,7 @@ function montoUnico() {
 test.beforeEach(async ({ page }) => {
   await entrar(page);
   await page.goto("/movimientos");
-  await expect(page.getByRole("heading", { name: "Movimientos", level: 1 })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Movimientos", level: 1 })).toBeVisible({ timeout: 30_000 });
   // Los atajos de teclado existen cuando la página terminó de cargar su JavaScript.
   await page.waitForLoadState("networkidle");
 });
