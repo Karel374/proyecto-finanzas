@@ -7,12 +7,11 @@ gastos deducibles del SRI y recibir recomendaciones que siempre explican de dón
 `Next.js 16` · `TypeScript estricto` · `PostgreSQL 18` · `Prisma 7` · `Costo de operación: $0`
 
 > Proyecto personal en construcción. Se desarrolla por fases (ver [Hoja de ruta](#hoja-de-ruta)).
-> Hoy están terminadas las fases **1 (base)**, **2 (autenticación y siembra)** y **3 (núcleo)**:
-> ya se puede entrar, cada usuario nuevo recibe sus datos iniciales, el menú lateral está completo
-> y existen las reglas de dinero, fechas y acceso a datos sobre las que se construye todo lo demás,
-> pero las secciones todavía no tienen pantallas de uso. Las
-> recomendaciones de la app serán educativas y no reemplazan la asesoría de un profesional ni la
-> consulta al SRI.
+> Hoy están terminadas las fases **1 a 4**: ya se puede entrar, registrar gastos, ingresos y
+> transferencias, llevar varias cuentas con sus saldos, cuadrarlas con el banco y programar
+> movimientos recurrentes. El panel de inicio, los presupuestos y el resto de módulos llegan en
+> las fases siguientes. Las recomendaciones de la app serán educativas y no reemplazan la asesoría
+> de un profesional ni la consulta al SRI.
 
 ---
 
@@ -88,7 +87,8 @@ Estas reglas guían todo el código y no se negocian:
 | 1. Base                    | **Terminada** |
 | 2. Autenticación y siembra | **Terminada** |
 | 3. Núcleo                  | **Terminada** |
-| 4 a 16                     | Pendientes    |
+| 4. Cuentas y movimientos   | **Terminada** |
+| 5 a 16                     | Pendientes    |
 
 ### Qué incluye la fase 1
 
@@ -148,8 +148,35 @@ es fija y está probada:
 
 Escribir `where: { usuarioId }` a mano en cada consulta funciona hasta el día en que alguien lo
 olvida. El cliente del usuario lo agrega solo, y una regla de ESLint impide que los módulos de
-`lib/datos/` usen el cliente crudo de Prisma. Solo cuatro archivos de infraestructura pueden
-hacerlo: el propio cliente, la conexión, la siembra y el adaptador de autenticación.
+`lib/datos/` usen el cliente crudo de Prisma. Solo cinco archivos de infraestructura pueden
+hacerlo: el propio cliente, la conexión, la siembra, el adaptador de autenticación y las tareas
+del cron.
+
+### Qué incluye la fase 4
+
+| Pieza                  | Qué hace                                                                                                                                                                                                         |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Panel de registro**  | Se abre con el botón "Registrar" o la tecla `N` desde cualquier pantalla, con el cursor en el monto y la última categoría ya elegida. `Enter` guarda y cierra; `Shift + Enter` guarda y deja el panel abierto.   |
+| **Gastos e ingresos**  | Monto, categoría con su color, fecha (con atajos Hoy y Ayer), cuenta y nota. El método de pago sale del tipo de cuenta. Un gasto de más de 5 veces el promedio de su categoría pide confirmación.                |
+| **Transferencias**     | Entre cuentas propias, desde el mismo panel. Mueven los saldos pero no cuentan como ingreso ni gasto.                                                                                                            |
+| **Plantillas**         | Hasta 6 accesos directos ("Almuerzo, $3,50, Alimentación, Efectivo") que registran con un clic y la fecha de hoy.                                                                                                |
+| **Página Movimientos** | Filtros por período, tipo, categorías, cuentas y texto; ingresos, gastos y balance del resultado; tabla agrupada por día con su subtotal; 50 por página; editar y borrar con "Deshacer". `/` enfoca el buscador. |
+| **Recurrentes**        | Reglas semanales, mensuales o anuales. El día 31 cae el último día de los meses cortos. Se pueden pausar, editar (solo afecta lo futuro) y borrar.                                                               |
+| **Cron diario**        | `api/cron/diario`, a las 00:05 de Ecuador según `vercel.json`, protegido con `CRON_SECRET`. Al abrir la app corre la misma generación como respaldo. Correrlo de más nunca duplica.                              |
+| **Página Cuentas**     | Saldo de cada cuenta (la tarjeta como deuda), total disponible, lo que se debe en tarjetas, próximos pagos, transferencias recientes y el botón "Cuadrar" para comparar con el saldo real del banco.             |
+
+#### Cómo se calcula el saldo
+
+Saldo inicial + ingresos − gastos + transferencias que entran − transferencias que salen, contando
+desde la fecha del saldo inicial. En una tarjeta de crédito el saldo es la deuda, así que los signos
+se invierten: un gasto con la tarjeta la sube y un pago desde el banco la baja.
+
+#### Por qué el cron no puede duplicar
+
+Cada recurrente guarda la última fecha que generó y solo avanza desde ahí. Además, la base tiene un
+índice único por recurrente y fecha, y la generación inserta con "saltar duplicados". Así, aunque
+el cron corra dos veces, o el cron y el respaldo corran al mismo tiempo, cada ocurrencia existe una
+sola vez. Hay pruebas para los dos casos.
 
 ---
 
@@ -272,26 +299,29 @@ la migración. La base rechaza el dato aunque un error de código intente guarda
 
 ## Tecnologías utilizadas
 
-| Tecnología              | Versión        | Uso en el proyecto                                                              | Documentación                        |
-| ----------------------- | -------------- | ------------------------------------------------------------------------------- | ------------------------------------ |
-| Node.js                 | 24             | Entorno de ejecución.                                                           | https://nodejs.org/docs/             |
-| Next.js                 | 16.4.6         | Interfaz, Server Components, Server Actions y rutas de API en un solo proyecto. | https://nextjs.org/docs              |
-| React                   | 19.3.1         | Componentes de la interfaz.                                                     | https://react.dev/                   |
-| TypeScript              | 6.0.3          | Tipado estricto en todo el código.                                              | https://www.typescriptlang.org/docs/ |
-| Tailwind CSS            | 4.3.5          | Estilos a partir de los tokens de color del diseño.                             | https://tailwindcss.com/docs         |
-| PostgreSQL              | 18             | Base de datos, con `DATE`, `ENUM`, `TIMESTAMPTZ`, restricciones e índices.      | https://www.postgresql.org/docs/     |
-| Prisma ORM              | 7.10.1         | Esquema tipado, migraciones versionadas y acceso a datos.                       | https://www.prisma.io/docs           |
-| node-postgres           | 8.23.1         | Controlador de PostgreSQL que usa Prisma.                                       | https://node-postgres.com/           |
-| Zod                     | 4.6.7          | Validación de variables de entorno, formularios y acciones.                     | https://zod.dev/                     |
-| NextAuth                | 4.24.15        | Inicio de sesión con Google y acceso de desarrollo, con sesiones JWT.           | https://next-auth.js.org/            |
-| Lucide                  | 1.77.0         | Íconos del menú y de los botones.                                               | https://lucide.dev/                  |
-| date-fns y @date-fns/tz | 4.4.0 y 1.5.0  | Aritmética de fechas, semanas de lunes a domingo y la zona de Ecuador.          | https://date-fns.org/                |
-| Vitest                  | 5.1.0          | Pruebas unitarias y de integración.                                             | https://vitest.dev/                  |
-| ESLint                  | 10.15.0        | Análisis estático del código.                                                   | https://eslint.org/docs/latest/      |
-| Prettier                | 3.10.1         | Formato uniforme del código.                                                    | https://prettier.io/docs/            |
-| Husky y lint-staged     | 9.1.7 y 17.6.1 | Revisión automática antes de cada commit.                                       | https://typicode.github.io/husky/    |
-| Docker Compose          | 5              | PostgreSQL local, igual al de CI y producción.                                  | https://docs.docker.com/compose/     |
-| GitHub Actions          | —              | Integración continua en cada push.                                              | https://docs.github.com/actions      |
+| Tecnología              | Versión        | Uso en el proyecto                                                                 | Documentación                        |
+| ----------------------- | -------------- | ---------------------------------------------------------------------------------- | ------------------------------------ |
+| Node.js                 | 24             | Entorno de ejecución.                                                              | https://nodejs.org/docs/             |
+| Next.js                 | 16.4.6         | Interfaz, Server Components, Server Actions y rutas de API en un solo proyecto.    | https://nextjs.org/docs              |
+| React                   | 19.3.1         | Componentes de la interfaz.                                                        | https://react.dev/                   |
+| TypeScript              | 6.0.3          | Tipado estricto en todo el código.                                                 | https://www.typescriptlang.org/docs/ |
+| Tailwind CSS            | 4.3.5          | Estilos a partir de los tokens de color del diseño.                                | https://tailwindcss.com/docs         |
+| PostgreSQL              | 18             | Base de datos, con `DATE`, `ENUM`, `TIMESTAMPTZ`, restricciones e índices.         | https://www.postgresql.org/docs/     |
+| Prisma ORM              | 7.10.1         | Esquema tipado, migraciones versionadas y acceso a datos.                          | https://www.prisma.io/docs           |
+| node-postgres           | 8.23.1         | Controlador de PostgreSQL que usa Prisma.                                          | https://node-postgres.com/           |
+| Zod                     | 4.6.7          | Validación de variables de entorno, formularios y acciones.                        | https://zod.dev/                     |
+| NextAuth                | 4.24.15        | Inicio de sesión con Google y acceso de desarrollo, con sesiones JWT.              | https://next-auth.js.org/            |
+| Lucide                  | 1.77.0         | Íconos del menú y de los botones.                                                  | https://lucide.dev/                  |
+| date-fns y @date-fns/tz | 4.4.0 y 1.5.0  | Aritmética de fechas, semanas de lunes a domingo y la zona de Ecuador.             | https://date-fns.org/                |
+| Radix UI                | 1.8.1          | Paneles y diálogos accesibles: foco atrapado, Esc para cerrar, lector de pantalla. | https://www.radix-ui.com/            |
+| React Hook Form         | 7.92.0         | Formularios, validados con los mismos esquemas de Zod que las acciones.            | https://react-hook-form.com/         |
+| Playwright              | 1.65.1         | Pruebas de extremo a extremo con un navegador real.                                | https://playwright.dev/              |
+| Vitest                  | 5.1.0          | Pruebas unitarias y de integración.                                                | https://vitest.dev/                  |
+| ESLint                  | 10.15.0        | Análisis estático del código.                                                      | https://eslint.org/docs/latest/      |
+| Prettier                | 3.10.1         | Formato uniforme del código.                                                       | https://prettier.io/docs/            |
+| Husky y lint-staged     | 9.1.7 y 17.6.1 | Revisión automática antes de cada commit.                                          | https://typicode.github.io/husky/    |
+| Docker Compose          | 5              | PostgreSQL local, igual al de CI y producción.                                     | https://docs.docker.com/compose/     |
+| GitHub Actions          | —              | Integración continua en cada push.                                                 | https://docs.github.com/actions      |
 
 Las versiones son las estables vigentes al crear el proyecto. Tres decisiones merecen explicación:
 
@@ -303,9 +333,11 @@ Las versiones son las estables vigentes al crear el proyecto. Tres decisiones me
 - **NextAuth 4 y no Auth.js 5.** La versión 5 sigue en beta; la 4 es la rama estable y ya
   soporta Next.js 16 y React 19.
 
-Llegarán en las fases siguientes: shadcn/ui sobre Radix (componentes
-accesibles), React Hook Form (formularios), Apache ECharts (gráficos),
-Playwright (pruebas de extremo a extremo) y Sentry (monitoreo opcional).
+- **Radix directo y no el generador de shadcn/ui.** El generador reescribe `globals.css` con sus
+  propios tokens de color. Los componentes de `components/ui/` siguen el estilo de shadcn/ui
+  (Radix por dentro para el foco y el teclado), pero con los tokens de la sección 3.
+
+Llegarán en las fases siguientes: Apache ECharts (gráficos) y Sentry (monitoreo opcional).
 
 ---
 
@@ -320,9 +352,17 @@ proyecto-finanzas/
 │   ├── (app)/                    # Todo lo que requiere sesión: menú lateral y secciones
 │   │   ├── layout.tsx            # Menú lateral + contenido de hasta 1280 px
 │   │   ├── page.tsx              # Inicio provisional con lo que dejó la siembra
-│   │   └── acciones.ts           # Server Action del tema
-│   └── api/auth/[...nextauth]/   # Rutas de NextAuth (404 para el proveedor de desarrollo fuera de él)
+│   │   ├── acciones.ts           # Server Action del tema
+│   │   ├── movimientos/          # Página y acciones de movimientos, plantillas y recurrentes
+│   │   └── cuentas/              # Página y acciones de cuentas, cuadrar y transferencias
+│   └── api/
+│       ├── auth/[...nextauth]/   # Rutas de NextAuth (404 para el proveedor de desarrollo fuera de él)
+│       └── cron/diario/          # Cron diario, protegido con CRON_SECRET
 ├── components/
+│   ├── ui/                       # Botón, campos, panel lateral, diálogo y avisos (sobre Radix)
+│   ├── registro/                 # Panel de registro, formularios y atajo N
+│   ├── movimientos/              # Filtros, tabla por día y recurrentes
+│   ├── cuentas/                  # Vista de cuentas, cuadrar y transferencias
 │   ├── menu/                     # Menú lateral, bloques, selector de tema y cerrar sesión
 │   └── en-construccion.tsx       # Página provisional de cada sección
 ├── lib/
@@ -330,6 +370,9 @@ proyecto-finanzas/
 │   ├── dinero.ts                 # Centavos, formato de montos y porcentajes, lectura de montos
 │   ├── fechas.ts                 # Hoy en Ecuador, semanas, meses, períodos y comparación
 │   ├── acciones.ts               # Server Actions validadas con Zod y errores tipados
+│   ├── esquemas.ts               # Esquemas de Zod compartidos por formularios y acciones
+│   ├── colores.ts                # Color de cada categoría según el tema
+│   ├── calculos/                 # Fórmulas puras: saldos, recurrentes y listas de movimientos
 │   ├── tema.ts                   # Temas, cookie y script que evita el parpadeo
 │   ├── auth/                     # Opciones de NextAuth, sesión y regla del acceso de desarrollo
 │   ├── semillas/                 # Datos iniciales: categorías, ajustes e ideas de ingreso
@@ -338,7 +381,8 @@ proyecto-finanzas/
 │       ├── cliente.ts            # Cliente del usuario: pone usuarioId en toda operación
 │       ├── siembra.ts            # Crea el usuario y siembra sus datos en una transacción
 │       ├── adaptador-auth.ts     # Adaptador de NextAuth que siembra al crear el usuario
-│       └── ...                   # Categorías, cuentas, ajustes y resumen, filtrados por sesión
+│       ├── tareas.ts             # Tareas del cron, recorriendo a cada usuario
+│       └── ...                   # Una por entidad: cuentas, movimientos, recurrentes, plantillas…
 ├── proxy.ts                      # Manda a /ingresar a quien no tiene sesión
 ├── prisma/
 │   ├── schema.prisma             # Esquema completo de la base
@@ -347,7 +391,9 @@ proyecto-finanzas/
 ├── tests/
 │   ├── *.test.ts                 # Pruebas unitarias
 │   ├── integracion/              # Pruebas contra PostgreSQL real
+│   ├── calculos/                 # Pruebas de las fórmulas puras
 │   └── produccion/               # Prueba sobre el build de producción
+├── e2e/                          # Pruebas de extremo a extremo con Playwright
 ├── docs/
 │   └── ESPECIFICACION.md         # Especificación completa: la fuente de verdad
 ├── .github/workflows/ci.yml      # Integración continua
@@ -361,8 +407,9 @@ proyecto-finanzas/
 └── package.json
 ```
 
-A medida que avancen las fases se sumarán `lib/calculos/`, `lib/reglas/`, `lib/insights/` y
-`e2e/`.
+A medida que avancen las fases se sumarán `lib/reglas/` (recomendaciones) y `lib/insights/`
+(panel de análisis). `vercel.json` programa el cron diario y `playwright.config.ts` configura las
+pruebas de extremo a extremo.
 
 ---
 
@@ -416,6 +463,7 @@ ocupe el 5432. Si quieres otro, cámbialo en `POSTGRES_PORT` y en `DATABASE_URL`
 | `npm run test:cobertura`  | Pruebas unitarias con informe de cobertura.                            |
 | `npm run test:db`         | Pruebas de integración contra PostgreSQL (requiere la base levantada). |
 | `npm run test:produccion` | Prueba del build de producción (requiere `npm run build` antes).       |
+| `npm run test:e2e`        | Pruebas de extremo a extremo con Playwright (levanta `next dev`).      |
 | `npm run db:migrar`       | Crea y aplica migraciones en desarrollo.                               |
 | `npm run db:desplegar`    | Aplica las migraciones pendientes, sin crear nuevas (CI y producción). |
 | `npm run db:sembrar`      | Carga los datos globales. Se puede correr varias veces.                |
@@ -453,26 +501,34 @@ openssl rand -hex 24      # CRON_SECRET
 npm test                                  # unitarias
 npm run test:db                           # integración (con docker compose up)
 npm run build && npm run test:produccion  # build de producción
+npm run test:e2e                          # extremo a extremo con Playwright
 ```
 
-Las pruebas están separadas en tres proyectos de Vitest: las **unitarias** no necesitan base de
-datos y corren en milisegundos, las **de integración** se conectan a un PostgreSQL real para
-comprobar lo que solo la base puede garantizar, y la **de producción** levanta el build real.
+Las pruebas están separadas en tres proyectos de Vitest y uno de Playwright: las **unitarias** no
+necesitan base de datos y corren en milisegundos, las **de integración** se conectan a un
+PostgreSQL real para comprobar lo que solo la base puede garantizar, la **de producción** levanta
+el build real y las **de extremo a extremo** manejan la app con un navegador. Para estas últimas,
+la primera vez hay que descargar Chromium con `npx playwright install chromium`.
 
-| Grupo                   | Archivo                                      |   Casos | Qué garantiza                                                                                                                                                                                                                                                                             |
-| ----------------------- | -------------------------------------------- | ------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Entorno**             | `tests/env.test.ts`                          |       7 | Que la app no arranque con una configuración inválida: clave faltante o vacía, URL que no es de PostgreSQL, secretos cortos, `ACCESO_DESARROLLO` con un valor distinto de `true` o `false`, y Google con una sola de sus dos claves.                                                      |
-| **Restricciones**       | `tests/integracion/restricciones.test.ts`    |      12 | Que la base rechace montos en cero o de más de $1.000.000, transferencias inválidas, recurrentes duplicados, un segundo fondo de emergencia y una segunda foto automática del mes; que no se pueda borrar una categoría con movimientos, y que borrar un usuario elimine todos sus datos. |
-| **Semillas**            | `tests/semillas.test.ts`                     |      14 | Que las 15 categorías, las 71 ideas (12 de tecnología, 3 generales y 4 por cada una de las 14 áreas) y los ajustes iniciales coincidan con la especificación, sin montos inventados en ninguna idea.                                                                                      |
-| **Autenticación**       | `tests/auth.test.ts`                         |       7 | Que el acceso de desarrollo solo exista con `NODE_ENV=development` y `ACCESO_DESARROLLO=true`, y que el tema solo acepte valores válidos.                                                                                                                                                 |
-| **Fechas**              | `tests/fechas.test.ts`                       |      53 | Los tres criterios de la fase 3: semanas de lunes a domingo (también cruzando de mes y de año), "hoy" en Ecuador a las 23:59 y a las 00:00, y meses de 28, 29, 30 y 31 días con el día 31 ajustado. Además, los períodos y su comparación con el anterior.                                |
-| **Dinero**              | `tests/dinero.test.ts`                       |      45 | El formato `$1.234,50` de Ecuador, el signo − y +, los porcentajes con un decimal, el redondeo al centavo, "Sin datos" al dividir para cero, y cómo se lee cada forma de escribir un monto.                                                                                               |
-| **Acciones**            | `tests/acciones.test.ts`                     |       9 | Que una Server Action rechace datos inválidos con el mensaje de cada campo, traduzca los errores de la base y nunca deje escapar detalles internos.                                                                                                                                       |
-| **Siembra**             | `tests/integracion/siembra.test.ts`          |       6 | Que un usuario nuevo, por Google o por el acceso de desarrollo, reciba todos sus datos iniciales; que sembrar dos veces no duplique nada, y que un fallo no deje un usuario a medias.                                                                                                     |
-| **Aislamiento**         | `tests/integracion/aislamiento.test.ts`      |       4 | Que un usuario no pueda leer ni modificar datos de otro, aunque conozca sus identificadores.                                                                                                                                                                                              |
-| **Cliente del usuario** | `tests/integracion/cliente-usuario.test.ts`  |      12 | Que cada operación de la base (leer, contar, agrupar, crear, actualizar, borrar y upsert) quede atada al usuario, aunque el código pida a propósito el `usuarioId` de otro.                                                                                                               |
-| **Producción**          | `tests/produccion/acceso-desarrollo.test.ts` |       4 | Que en el build de producción el botón de desarrollo no aparezca y su ruta responda 404, aunque `ACCESO_DESARROLLO` valga `true`, y que sin sesión el inicio mande a `/ingresar`.                                                                                                         |
-| **Total**               |                                              | **173** |                                                                                                                                                                                                                                                                                           |
+| Grupo                     | Archivo                                      |   Casos | Qué garantiza                                                                                                                                                                                                                                                                             |
+| ------------------------- | -------------------------------------------- | ------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Entorno**               | `tests/env.test.ts`                          |       7 | Que la app no arranque con una configuración inválida: clave faltante o vacía, URL que no es de PostgreSQL, secretos cortos, `ACCESO_DESARROLLO` con un valor distinto de `true` o `false`, y Google con una sola de sus dos claves.                                                      |
+| **Restricciones**         | `tests/integracion/restricciones.test.ts`    |      12 | Que la base rechace montos en cero o de más de $1.000.000, transferencias inválidas, recurrentes duplicados, un segundo fondo de emergencia y una segunda foto automática del mes; que no se pueda borrar una categoría con movimientos, y que borrar un usuario elimine todos sus datos. |
+| **Semillas**              | `tests/semillas.test.ts`                     |      14 | Que las 15 categorías, las 71 ideas (12 de tecnología, 3 generales y 4 por cada una de las 14 áreas) y los ajustes iniciales coincidan con la especificación, sin montos inventados en ninguna idea.                                                                                      |
+| **Autenticación**         | `tests/auth.test.ts`                         |       7 | Que el acceso de desarrollo solo exista con `NODE_ENV=development` y `ACCESO_DESARROLLO=true`, y que el tema solo acepte valores válidos.                                                                                                                                                 |
+| **Fechas**                | `tests/fechas.test.ts`                       |      53 | Los tres criterios de la fase 3: semanas de lunes a domingo (también cruzando de mes y de año), "hoy" en Ecuador a las 23:59 y a las 00:00, y meses de 28, 29, 30 y 31 días con el día 31 ajustado. Además, los períodos y su comparación con el anterior.                                |
+| **Dinero**                | `tests/dinero.test.ts`                       |      45 | El formato `$1.234,50` de Ecuador, el signo − y +, los porcentajes con un decimal, el redondeo al centavo, "Sin datos" al dividir para cero, y cómo se lee cada forma de escribir un monto.                                                                                               |
+| **Acciones**              | `tests/acciones.test.ts`                     |       9 | Que una Server Action rechace datos inválidos con el mensaje de cada campo, traduzca los errores de la base y nunca deje escapar detalles internos.                                                                                                                                       |
+| **Siembra**               | `tests/integracion/siembra.test.ts`          |       6 | Que un usuario nuevo, por Google o por el acceso de desarrollo, reciba todos sus datos iniciales; que sembrar dos veces no duplique nada, y que un fallo no deje un usuario a medias.                                                                                                     |
+| **Aislamiento**           | `tests/integracion/aislamiento.test.ts`      |       4 | Que un usuario no pueda leer ni modificar datos de otro, aunque conozca sus identificadores.                                                                                                                                                                                              |
+| **Cliente del usuario**   | `tests/integracion/cliente-usuario.test.ts`  |      12 | Que cada operación de la base (leer, contar, agrupar, crear, actualizar, borrar y upsert) quede atada al usuario, aunque el código pida a propósito el `usuarioId` de otro.                                                                                                               |
+| **Cuentas**               | `tests/calculos/cuentas.test.ts`             |      18 | El saldo de cada tipo de cuenta (la tarjeta como deuda), que una transferencia no cambie el total del dinero, el método de pago automático, el próximo pago de tarjeta y que el ajuste de cuadrar deje el saldo igual al real.                                                            |
+| **Recurrentes**           | `tests/calculos/recurrentes.test.ts`         |      16 | Que un recurrente del día 31 caiga el 30 de noviembre, que el 29 de febrero pase al 28, que no genere fuera de sus fechas ni en pausa, y que correr dos veces no repita nada.                                                                                                             |
+| **Listas de movimientos** | `tests/calculos/movimientos.test.ts`         |       6 | Los totales, la agrupación por día con su subtotal y el aviso de gasto inusual justo en su borde de 5 veces el promedio.                                                                                                                                                                  |
+| **Fase 4**                | `tests/integracion/fase4.test.ts`            |      17 | Contra la base real: una transferencia no cambia ingresos ni gastos; el cron dos veces, o dos a la vez, no duplica; el día 31 cae el 30; deshacer un borrado; filtros y totales; plantillas; cuadrar con ajuste; y que no se pueda apuntar a categorías o cuentas de otro usuario.        |
+| **Producción**            | `tests/produccion/acceso-desarrollo.test.ts` |       6 | Que en el build de producción el botón de desarrollo no aparezca y su ruta responda 404, aunque `ACCESO_DESARROLLO` valga `true`; que sin sesión el inicio mande a `/ingresar`; y que el cron rechace a quien no trae `CRON_SECRET`.                                                      |
+| **Extremo a extremo**     | `e2e/registro.spec.ts`                       |       5 | Con un navegador real: un gasto se registra solo con teclado en menos de 10 segundos, Shift + Enter deja el panel abierto, Esc lo cierra, un monto inválido muestra su mensaje, borrar ofrece Deshacer y `/` enfoca el buscador.                                                          |
+| **Total**                 |                                              | **237** |                                                                                                                                                                                                                                                                                           |
 
 ### Por qué importan las pruebas de integración
 
@@ -483,8 +539,8 @@ esperan que PostgreSQL los rechace. Si alguna restricción desaparece, la prueba
 ### Cobertura
 
 La definición de terminado exige al menos **80 % de cobertura** en `lib/calculos/` y
-`lib/reglas/`. El umbral ya está configurado en `vitest.config.mts` y se aplicará cuando esas
-carpetas tengan código, a partir de la fase 3.
+`lib/reglas/`. El umbral está configurado en `vitest.config.mts` y la CI falla si no se cumple.
+Hoy `lib/calculos/` tiene 100 % de líneas cubiertas.
 
 ---
 
@@ -509,7 +565,8 @@ GitHub Actions ejecuta, en este orden, sobre un PostgreSQL 18 temporal:
 7. Semilla.
 8. Pruebas de integración.
 9. Build de producción.
-10. Prueba de que el acceso de desarrollo no existe en ese build.
+10. Prueba de que el acceso de desarrollo no existe en ese build y de que el cron pide su secreto.
+11. Pruebas de extremo a extremo con Chromium.
 
 Los secretos de la CI no están escritos en el código: se toman de los secretos de GitHub si
 existen y, si no, se generan al azar en cada ejecución.

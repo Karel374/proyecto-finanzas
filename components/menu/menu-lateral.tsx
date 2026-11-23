@@ -1,7 +1,6 @@
-import { Plus } from "lucide-react";
-import Link from "next/link";
 import { Suspense } from "react";
 
+import { BotonRegistrar } from "@/components/registro/boton-registrar";
 import { obtenerAjustes } from "@/lib/datos/ajustes";
 import { obtenerSesion } from "@/lib/auth/sesion";
 
@@ -23,15 +22,7 @@ export function MenuLateral() {
         <span className="hidden text-base font-semibold xl:inline">Finanzas</span>
       </div>
 
-      {/* El formulario rápido llega en la fase 4; por ahora el botón lleva a Movimientos. */}
-      <Link
-        href="/movimientos"
-        title="Registrar"
-        className="bg-acento text-sobre-acento focus-visible:outline-acento flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2"
-      >
-        <Plus aria-hidden="true" className="size-5 shrink-0" />
-        <span className="sr-only xl:not-sr-only">Registrar</span>
-      </Link>
+      <BotonRegistrar />
 
       <EnlacesMenu />
 

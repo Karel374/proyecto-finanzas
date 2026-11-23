@@ -21,6 +21,18 @@
   --alerta-fondo: #fef3c7;
   --sobre-marca: #ffffff;
   --sobre-acento: #ffffff;
+  /* Colores de categoría (sección 4). Solo para gráficos y el punto junto al nombre, nunca para montos. */
+  --cat-1: #2a78d6;
+  --cat-2: #eb6834;
+  --cat-3: #1baf7a;
+  --cat-4: #eda100;
+  --cat-5: #e87ba4;
+  --cat-6: #008300;
+  --cat-7: #6250d6;
+  --cat-8: #e34948;
+  --cat-otros: #898781;
+  --cat-intereses: #5f5e5a;
+  --cat-rendimientos: #eda100;
   color-scheme: light;
 }
 
@@ -45,6 +57,16 @@
     --alerta-fondo: #3a2a0b;
     --sobre-marca: #ffffff;
     --sobre-acento: #0b1220;
+    --cat-1: #3987e5;
+    --cat-2: #d95926;
+    --cat-3: #199e70;
+    --cat-4: #c98500;
+    --cat-5: #d55181;
+    --cat-6: #0ca30c;
+    --cat-7: #9085e9;
+    --cat-8: #e66767;
+    --cat-intereses: #b4b2a9;
+    --cat-rendimientos: #c98500;
     color-scheme: dark;
   }
 }
@@ -68,6 +90,16 @@
   --alerta-fondo: #3a2a0b;
   --sobre-marca: #ffffff;
   --sobre-acento: #0b1220;
+  --cat-1: #3987e5;
+  --cat-2: #d95926;
+  --cat-3: #199e70;
+  --cat-4: #c98500;
+  --cat-5: #d55181;
+  --cat-6: #0ca30c;
+  --cat-7: #9085e9;
+  --cat-8: #e66767;
+  --cat-intereses: #b4b2a9;
+  --cat-rendimientos: #c98500;
   color-scheme: dark;
 }
 

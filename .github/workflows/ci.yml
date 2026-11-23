@@ -92,3 +92,9 @@ jobs:
 
       - name: El acceso de desarrollo no existe en producción
         run: npm run test:produccion
+
+      - name: Instalar Chromium para las pruebas de extremo a extremo
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas de extremo a extremo
+        run: npm run test:e2e

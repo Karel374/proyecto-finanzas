@@ -5,7 +5,9 @@
  */
 import { z } from "zod";
 
-export type CodigoError = "VALIDACION" | "NO_ENCONTRADO" | "DUPLICADO" | "EN_USO" | "INESPERADO";
+/** CONFIRMAR: la acción necesita que el usuario confirme algo (por ejemplo, un monto inusual). */
+export type CodigoError =
+  "VALIDACION" | "CONFIRMAR" | "NO_ENCONTRADO" | "DUPLICADO" | "EN_USO" | "INESPERADO";
 
 export type Resultado<T = void> =
   { ok: true; datos: T } | { ok: false; codigo: CodigoError; error: string; campos?: Record<string, string> };
@@ -15,6 +17,8 @@ export class ErrorDeAccion extends Error {
   constructor(
     readonly codigo: CodigoError,
     mensaje: string,
+    /** Campo del formulario al que pertenece el error, para mostrarlo debajo de él. */
+    readonly campo?: string,
   ) {
     super(mensaje);
     this.name = "ErrorDeAccion";
@@ -42,7 +46,11 @@ function codigoPrisma(error: unknown): string | undefined {
 
 /** Traduce cualquier error a un resultado fallido con mensaje en español. */
 export function aResultadoFallido(error: unknown): Extract<Resultado, { ok: false }> {
-  if (error instanceof ErrorDeAccion) return { ok: false, codigo: error.codigo, error: error.message };
+  if (error instanceof ErrorDeAccion) {
+    return error.campo
+      ? { ok: false, codigo: error.codigo, error: error.message, campos: { [error.campo]: error.message } }
+      : { ok: false, codigo: error.codigo, error: error.message };
+  }
   switch (codigoPrisma(error)) {
     case "P2025":
       return { ok: false, codigo: "NO_ENCONTRADO", error: "No se encontró el registro" };

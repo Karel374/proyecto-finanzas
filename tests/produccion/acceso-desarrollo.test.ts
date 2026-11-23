@@ -56,6 +56,22 @@ describe("build de producción", () => {
     ).toBe(404);
   });
 
+  it("el cron diario rechaza a quien no trae CRON_SECRET", async () => {
+    expect((await fetch(`${BASE}/api/cron/diario`)).status).toBe(401);
+    const otro = await fetch(`${BASE}/api/cron/diario`, {
+      headers: { authorization: "Bearer no-es-el-secreto" },
+    });
+    expect(otro.status).toBe(401);
+  });
+
+  it("con CRON_SECRET el cron corre y dice qué hizo", async () => {
+    const respuesta = await fetch(`${BASE}/api/cron/diario`, {
+      headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+    });
+    expect(respuesta.status).toBe(200);
+    expect(await respuesta.json()).toMatchObject({ errores: 0 });
+  });
+
   it("sin sesión, el inicio manda a /ingresar", async () => {
     const respuesta = await fetch(`${BASE}/`, { redirect: "manual" });
     expect(respuesta.status).toBe(307);

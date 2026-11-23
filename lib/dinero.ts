@@ -126,6 +126,17 @@ export function textoACentavos(texto: string): number | null {
 }
 
 /**
+ * Centavos → texto para un campo editable: 123450 → "1234,50". Sin separador de miles, así
+ * `textoACentavos` lo vuelve a leer igual.
+ */
+export function centavosATexto(centavos: number): string {
+  exigirEntero(centavos);
+  const absoluto = Math.abs(centavos);
+  const texto = `${Math.floor(absoluto / 100)},${String(absoluto % 100).padStart(2, "0")}`;
+  return centavos < 0 ? `-${texto}` : texto;
+}
+
+/**
  * Monto de un formulario: mayor que cero, máximo dos decimales y hasta $1.000.000 (sección 6).
  * Recibe el texto del campo y entrega centavos enteros.
  */

@@ -88,6 +88,12 @@ export function clienteDelUsuario(usuarioId: string) {
 
 export type ClienteDelUsuario = ReturnType<typeof clienteDelUsuario>;
 
+/**
+ * Valor para el campo `usuarioId` de un `create`: los tipos de Prisma lo piden, pero el cliente del
+ * usuario siempre lo reemplaza por el de la sesión. Usar esta constante deja claro que no se elige aquí.
+ */
+export const DEL_USUARIO = "";
+
 /** Cliente del usuario de la sesión actual. Se crea una vez por petición. */
 export const datosDelUsuario = cache(async (): Promise<ClienteDelUsuario> => {
   return clienteDelUsuario(await usuarioIdActual());

@@ -46,6 +46,7 @@ const eslintConfig = defineConfig([
       "lib/datos/cliente.ts",
       "lib/datos/siembra.ts",
       "lib/datos/adaptador-auth.ts",
+      "lib/datos/tareas.ts",
     ],
     rules: {
       "no-restricted-imports": [
