@@ -15,7 +15,10 @@ export function MensajeError() {
   if (!codigo) return null;
 
   return (
-    <p role="alert" className="bg-gasto-fondo text-gasto flex items-start gap-2 rounded-md p-3 text-sm">
+    <p
+      role="alert"
+      className="flex items-start gap-2 rounded-xl border border-[#5c2422] bg-[#2a1312] p-4 text-sm text-[#fca5a5]"
+    >
       <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
       {MENSAJES[codigo] ?? "No se pudo iniciar sesión. Intenta de nuevo."}
     </p>

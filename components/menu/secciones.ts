@@ -26,7 +26,7 @@ export const BLOQUES_MENU: Bloque[] = [
   {
     titulo: "Día a día",
     secciones: [
-      { titulo: "Inicio", ruta: "/", icono: House, fase: 5 },
+      { titulo: "Inicio", ruta: "/panel", icono: House, fase: 5 },
       { titulo: "Movimientos", ruta: "/movimientos", icono: ArrowLeftRight, fase: 4 },
       { titulo: "Cuentas", ruta: "/cuentas", icono: Wallet, fase: 4 },
       { titulo: "Presupuestos", ruta: "/presupuestos", icono: ChartPie, fase: 6 },

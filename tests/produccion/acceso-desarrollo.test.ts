@@ -72,8 +72,14 @@ describe("build de producción", () => {
     expect(await respuesta.json()).toMatchObject({ errores: 0 });
   });
 
-  it("sin sesión, el inicio manda a /ingresar", async () => {
+  it("sin sesión, / muestra la landing pública", async () => {
     const respuesta = await fetch(`${BASE}/`, { redirect: "manual" });
+    expect(respuesta.status).toBe(200);
+    expect(await respuesta.text()).toContain("Cada dólar, abierto en partes.");
+  });
+
+  it("sin sesión, el panel manda a /ingresar", async () => {
+    const respuesta = await fetch(`${BASE}/panel`, { redirect: "manual" });
     expect(respuesta.status).toBe(307);
     expect(respuesta.headers.get("location")).toContain("/ingresar");
   });

@@ -103,6 +103,146 @@
   color-scheme: dark;
 }
 
+/* Mundo de la landing pública (sección 3, "Landing pública"): casa de moneda de noche.
+   El único color es el metal; los colores de categoría llegan cuando la moneda se abre. */
+[data-mundo="moneda"] {
+  --m-fondo: #0d0d0b;
+  --m-superficie: #17160f;
+  --m-superficie-2: #201e15;
+  --m-linea: #2e2b21;
+  --m-texto: #f2efe6;
+  --m-texto-2: #bdb6a3;
+  --m-texto-3: #948d7a;
+  --m-laton-luz: #f6e7b8;
+  --m-laton: #d6b46a;
+  --m-laton-sombra: #7a5c22;
+  --m-sobre-laton: #1a1407;
+  --cat-1: #3987e5;
+  --cat-2: #d95926;
+  --cat-3: #199e70;
+  --cat-4: #c98500;
+  --cat-5: #d55181;
+  --cat-6: #0ca30c;
+  --cat-7: #9085e9;
+  --cat-8: #e66767;
+  --cat-otros: #898781;
+  color-scheme: dark;
+  background: var(--m-fondo);
+  color: var(--m-texto);
+  font-family: var(--font-archivo), var(--font-plex-sans), system-ui, sans-serif;
+}
+
+[data-mundo="moneda"] ::selection {
+  background: var(--m-laton);
+  color: var(--m-sobre-laton);
+}
+
+[data-mundo="moneda"] :focus-visible {
+  outline: 2px solid var(--m-laton);
+  outline-offset: 3px;
+}
+
+html:has([data-mundo="moneda"]) {
+  background: #0d0d0b;
+  scrollbar-color: #4a4434 #0d0d0b;
+}
+
+@theme inline {
+  --color-m-fondo: var(--m-fondo);
+  --color-m-superficie: var(--m-superficie);
+  --color-m-superficie-2: var(--m-superficie-2);
+  --color-m-linea: var(--m-linea);
+  --color-m-texto: var(--m-texto);
+  --color-m-texto-2: var(--m-texto-2);
+  --color-m-texto-3: var(--m-texto-3);
+  --color-m-laton: var(--m-laton);
+  --color-m-laton-luz: var(--m-laton-luz);
+  --color-m-sobre-laton: var(--m-sobre-laton);
+  --font-archivo: var(--font-archivo);
+}
+
+/* Rótulos grabados: Archivo expandida en versalitas, como la leyenda del canto de una moneda. */
+.grabado {
+  font-variation-settings: "wdth" 125;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+}
+
+/* La moneda del hero: dos caras y un canto con grosor, girando con perspectiva. */
+.moneda-escena {
+  position: relative;
+  aspect-ratio: 1;
+  perspective: 1400px;
+}
+
+.moneda-3d {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  animation: moneda-giro 22s linear infinite;
+}
+
+.moneda-cara,
+.moneda-canto {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  backface-visibility: hidden;
+}
+
+.moneda-cara {
+  transform: translateZ(7px);
+}
+
+.moneda-cara-reverso {
+  transform: rotateY(180deg) translateZ(7px);
+}
+
+.moneda-canto {
+  backface-visibility: visible;
+  background: repeating-conic-gradient(#8a6a2a 0 1.2deg, #c9a253 1.2deg 2.4deg);
+  scale: 0.985;
+}
+
+.moneda-sombra {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -9%;
+  height: 9%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 0.75), transparent);
+  filter: blur(6px);
+}
+
+@keyframes moneda-giro {
+  from {
+    transform: rotateX(10deg) rotateY(0deg);
+  }
+  to {
+    transform: rotateX(10deg) rotateY(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moneda-3d {
+    animation: none;
+    transform: rotateX(10deg) rotateY(-24deg);
+  }
+}
+
+/* Mientras la moneda viaja, las monedas quietas de las anclas no se muestran. */
+html[data-moneda-viajera="activa"] .ancla-respaldo {
+  visibility: hidden;
+}
+
+.titular {
+  font-variation-settings: "wdth" 100;
+  font-weight: 300;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
 @theme inline {
   --color-fondo: var(--fondo);
   --color-superficie: var(--superficie);

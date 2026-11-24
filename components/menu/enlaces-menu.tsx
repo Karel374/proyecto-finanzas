@@ -18,7 +18,7 @@ export function EnlacesMenu() {
           </h2>
           <ul className="flex flex-col gap-0.5">
             {bloque.secciones.map(({ titulo, ruta, icono: Icono }) => {
-              const activa = ruta === "/" ? rutaActual === "/" : rutaActual.startsWith(ruta);
+              const activa = rutaActual === ruta || rutaActual.startsWith(`${ruta}/`);
               return (
                 <li key={ruta}>
                   <Link

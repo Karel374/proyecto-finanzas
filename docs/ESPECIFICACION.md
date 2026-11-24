@@ -78,8 +78,9 @@ Mientras construyes la app no hace falta configurar Google ni correo. La pantall
 
 ```
 app/
+  (publico)/page.tsx           Landing pública (sección 3, "Landing pública")
   (auth)/ingresar/page.tsx
-  (app)/page.tsx               Panel de inicio
+  (app)/panel/page.tsx         Panel de inicio
   (app)/movimientos/page.tsx
   (app)/presupuestos/page.tsx
   (app)/metas/page.tsx
@@ -163,6 +164,15 @@ Reglas de uso del color:
 - Ancho mínimo soportado de 1024 px. Por debajo de 1280 px el menú se reduce a íconos.
 - Atajos de teclado: `N` abre el formulario de registro, `/` enfoca el buscador de movimientos y `Esc` cierra cualquier panel.
 - El menú se agrupa en cinco bloques. Día a día: Inicio, Movimientos, Cuentas y Presupuestos. Futuro: Metas y plan, Patrimonio, Deudas e Inversión. Crecer: Ingresos y Empleo. Entender: Análisis y Recomendaciones. Herramientas: Revisión mensual, Préstamos, Impuestos y Ajustes.
+
+### Landing pública
+
+La dirección `/` es una landing para quien no tiene sesión; quien ya entró va directo a `/panel`. Habla primero a personas de Ecuador que cobran en dólares y, al final, muestra a reclutadores cómo está construida la app. Su acción principal es "Entrar con Google".
+
+- **Objeto protagonista.** Una moneda propia de la marca (no una moneda real de curso legal) gira lento en la primera pantalla. Al bajar, en una secuencia de tres actos, muestra el saldo grabado (¿cuánto me queda?), se abre en los gajos de las categorías de gasto (¿en qué se me va?) y levanta un gajo con una recomendación y su porqué (¿qué debería hacer?). Termina siendo el anillo de gastos del panel.
+- **Mundo visual.** Casa de moneda de noche: fondo negro cálido, texto marfil y el metal (latón) como único color. Los colores de categoría de la sección 4 aparecen solo cuando la moneda se abre. Tipografía Archivo, expandida para rótulos y de ancho normal y peso liviano para titulares.
+- **Datos de ejemplo.** Todo monto que muestre es de ejemplo y lo dice. No hay testimonios, cifras de uso ni logos de clientes inventados.
+- **Accesibilidad y rendimiento.** Contraste AA, todo con teclado, sin animación con "reducir movimiento", sin librerías de animación y funcional desde 360 px de ancho.
 
 ## 4. Categorías
 
@@ -1052,6 +1062,7 @@ Todo se construye de una vez, pero en 16 fases encadenadas. Cada fase empieza so
 | 2. Autenticación y siembra | Auth.js con acceso de desarrollo y Google, siembra por usuario, menú lateral por bloques y tema | Un usuario nuevo entra y ya tiene 15 categorías, sus ajustes, la cuenta Efectivo y las ideas semilla. Un usuario no puede leer datos de otro (prueba incluida). El botón de desarrollo no aparece en el build de producción |
 | 3. Núcleo | `lib/dinero.ts`, `lib/fechas.ts` y la capa `lib/datos/` | Pruebas de semana de lunes a domingo, de la zona de Ecuador cerca de medianoche y de meses de 28, 29, 30 y 31 días |
 | 4. Cuentas y movimientos | Cuentas, transferencias, cuadrar con el banco, panel de registro, plantillas, página de movimientos, recurrentes y su cron | Un gasto se registra solo con teclado en menos de 10 segundos. Una transferencia no cambia ingresos ni gastos. Un recurrente del día 31 cae el 30 de noviembre. Correr el cron dos veces no duplica nada |
+| 4b. Landing pública | Landing en `/` con la moneda que se abre, el panel pasa a `/panel` y la pantalla de ingreso adopta el mismo mundo | Sin sesión, `/` muestra la landing y "Entrar con Google" inicia sesión; con sesión, `/` lleva a `/panel`. Con "reducir movimiento" todo el contenido se ve sin animación. Contraste AA y uso con teclado comprobados. Se ve bien en 360 px, 768 px y escritorio |
 | 5. Panel de inicio | Tarjetas, fórmulas 1 a 4, los tres gráficos con su vista de tabla | Cada fórmula tiene pruebas, incluido el caso "Sin datos". Los gráficos se ven bien en modo claro y oscuro |
 | 6. Presupuestos | Estados, cálculos, avisos y "Sugerir presupuestos" | Pruebas en 79,9 %, 80 %, 99,9 % y 100 %. Cada aviso aparece una sola vez por mes |
 | 7. Metas y plan a largo plazo | Metas, aportes, fondo de emergencia, horizonte, línea de vida, proyección a 1, 5 y 10 años, reparto en cascada e independencia financiera | El fondo se crea y se recalcula el día 1. Los aportes no cambian el balance. El reparto en cascada respeta la prioridad en casos de prueba |
@@ -1095,6 +1106,7 @@ La meta es costo cero y todo quedó decidido con ese criterio. La especificació
 | TypeScript | 6.0. La 7 ya salió, pero typescript-eslint todavía no la soporta |
 | Cron | Una sola ruta diaria, `api/cron/diario`, protegida con `CRON_SECRET` |
 | Avisos | Tabla `Aviso` con clave única por usuario, para que cada aviso se cree una sola vez |
+| Landing pública | Se agrega la fase 4b: landing oscura con la moneda que se abre. Dentro de la app, el estilo pasa a uno cálido y sobrio (fondo tipo papel, un solo acento); sus tokens se actualizan en la sección 3 antes de la fase 5 |
 | Pendiente para la fase 12 | "Dar por perdido" un préstamo: el dinero ya salió de la cuenta, así que el gasto no debe volver a restarse del saldo |
 
 ### Fuentes

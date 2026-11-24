@@ -7,7 +7,7 @@ import { obtenerEnv } from "./lib/env";
 obtenerEnv();
 
 const nextConfig: NextConfig = {
-  // Evita que `next dev` genere archivos de instrucciones (AGENTS.md) en el proyecto.
+  // Evita que `next dev` cree archivos extra en la raíz del proyecto.
   agentRules: false,
   cacheComponents: true,
   partialPrefetching: true,

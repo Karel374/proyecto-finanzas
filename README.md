@@ -7,10 +7,10 @@ gastos deducibles del SRI y recibir recomendaciones que siempre explican de dón
 `Next.js 16` · `TypeScript estricto` · `PostgreSQL 18` · `Prisma 7` · `Costo de operación: $0`
 
 > Proyecto personal en construcción. Se desarrolla por fases (ver [Hoja de ruta](#hoja-de-ruta)).
-> Hoy están terminadas las fases **1 a 4**: ya se puede entrar, registrar gastos, ingresos y
-> transferencias, llevar varias cuentas con sus saldos, cuadrarlas con el banco y programar
-> movimientos recurrentes. El panel de inicio, los presupuestos y el resto de módulos llegan en
-> las fases siguientes. Las recomendaciones de la app serán educativas y no reemplazan la asesoría
+> Hoy están terminadas las fases **1 a 4b**: una landing pública con una moneda que se abre en
+> tus gastos, y dentro de la app ya se puede registrar gastos, ingresos y transferencias, llevar
+> varias cuentas con sus saldos, cuadrarlas con el banco y programar movimientos recurrentes. El
+> panel de inicio, los presupuestos y el resto de módulos llegan en las fases siguientes. Las recomendaciones de la app serán educativas y no reemplazan la asesoría
 > de un profesional ni la consulta al SRI.
 
 ---
@@ -88,6 +88,7 @@ Estas reglas guían todo el código y no se negocian:
 | 2. Autenticación y siembra | **Terminada** |
 | 3. Núcleo                  | **Terminada** |
 | 4. Cuentas y movimientos   | **Terminada** |
+| 4b. Landing pública        | **Terminada** |
 | 5 a 16                     | Pendientes    |
 
 ### Qué incluye la fase 1
@@ -178,6 +179,27 @@ Cada recurrente guarda la última fecha que generó y solo avanza desde ahí. Ad
 el cron corra dos veces, o el cron y el respaldo corran al mismo tiempo, cada ocurrencia existe una
 sola vez. Hay pruebas para los dos casos.
 
+### Qué incluye la fase 4b: la landing pública
+
+Quien entra a `/` sin sesión ve la landing; quien ya entró va directo a su panel, ahora en `/panel`.
+
+| Pieza                       | Qué hace                                                                                                                                                                                                                                    |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **La moneda viajera**       | Una sola moneda de la marca, dibujada en SVG con canto estriado y leyenda grabada, baja contigo por toda la página: cambia de lugar, tamaño, giro e inclinación según la sección, y el giro sigue al scroll. No usa librerías de animación. |
+| **Tres actos**              | En "Una moneda, tres preguntas" la moneda se detiene y, mientras bajas, muestra el saldo grabado, se abre en los gajos de colores de cada categoría y levanta el gajo de la recomendación con su porqué.                                    |
+| **Casa de moneda de noche** | Fondo negro cálido, texto marfil y el latón como único color. Los colores de categoría aparecen solo cuando la moneda se abre. Títulos en Archivo, cuyo eje de anchura da las leyendas expandidas del canto.                                |
+| **Honestidad**              | Todo monto de la demostración dice "Datos de ejemplo", y lo que todavía no existe dice en qué fase llega. Sin testimonios ni cifras inventadas.                                                                                             |
+| **Accesibilidad**           | Con "reducir movimiento" o sin JavaScript, cada sección muestra su moneda quieta y los tres actos uno debajo del otro. Enlace para saltar al contenido, foco visible y contraste AA.                                                        |
+| **Pantalla de ingreso**     | Comparte el mismo mundo: la moneda girando a un lado y el acceso al otro.                                                                                                                                                                   |
+
+#### Cómo viaja la moneda
+
+Cada sección reserva un ancla, un espacio vacío donde la moneda debe posarse. Una capa fija dibuja
+la única moneda y, en cada cuadro, mide dónde están las anclas en la pantalla y la lleva de una a la
+siguiente según el centro de la vista. Así la página se acomoda alrededor de la moneda, y si cambia
+el diseño de una sección, la moneda la sigue sola. Entre secciones de texto viaja atenuada para no
+tapar lo que se lee.
+
 ---
 
 ## Hoja de ruta
@@ -191,6 +213,7 @@ sus criterios de aceptación y la integración continua está en verde.
 | 2. Autenticación y siembra     | Inicio de sesión con Google y acceso de desarrollo, datos iniciales por usuario, menú y tema |
 | 3. Núcleo                      | Manejo de dinero en centavos, fechas en la zona de Ecuador y la capa de datos                |
 | 4. Cuentas y movimientos       | Cuentas, transferencias, registro rápido, plantillas, recurrentes y su tarea diaria          |
+| 4b. Landing pública            | Landing con la moneda que viaja y se abre, panel en `/panel` e ingreso con el mismo mundo    |
 | 5. Panel de inicio             | Tarjetas de resumen, fórmulas de ahorro y proyección, y los tres gráficos principales        |
 | 6. Presupuestos                | Estados, avisos y presupuestos sugeridos                                                     |
 | 7. Metas y plan a largo plazo  | Metas, fondo de emergencia, proyecciones a 1, 5 y 10 años e independencia financiera         |
@@ -348,10 +371,11 @@ proyecto-finanzas/
 ├── app/                          # Rutas de Next.js (App Router)
 │   ├── layout.tsx                # Idioma, tipografía, estilos y script del tema
 │   ├── globals.css               # Tokens de color en modo claro y oscuro
-│   ├── (auth)/ingresar/          # Pantalla de inicio de sesión
+│   ├── (publico)/                # Landing pública con la moneda viajera
+│   ├── (auth)/ingresar/          # Pantalla de inicio de sesión, en el mismo mundo
 │   ├── (app)/                    # Todo lo que requiere sesión: menú lateral y secciones
 │   │   ├── layout.tsx            # Menú lateral + contenido de hasta 1280 px
-│   │   ├── page.tsx              # Inicio provisional con lo que dejó la siembra
+│   │   ├── panel/                # Inicio provisional con lo que dejó la siembra (fase 5)
 │   │   ├── acciones.ts           # Server Action del tema
 │   │   ├── movimientos/          # Página y acciones de movimientos, plantillas y recurrentes
 │   │   └── cuentas/              # Página y acciones de cuentas, cuadrar y transferencias
@@ -359,6 +383,7 @@ proyecto-finanzas/
 │       ├── auth/[...nextauth]/   # Rutas de NextAuth (404 para el proveedor de desarrollo fuera de él)
 │       └── cron/diario/          # Cron diario, protegido con CRON_SECRET
 ├── components/
+│   ├── landing/                  # Moneda (SVG), moneda viajera, tres actos y demostración
 │   ├── ui/                       # Botón, campos, panel lateral, diálogo y avisos (sobre Radix)
 │   ├── registro/                 # Panel de registro, formularios y atajo N
 │   ├── movimientos/              # Filtros, tabla por día y recurrentes
@@ -526,9 +551,10 @@ la primera vez hay que descargar Chromium con `npx playwright install chromium`.
 | **Recurrentes**           | `tests/calculos/recurrentes.test.ts`         |      16 | Que un recurrente del día 31 caiga el 30 de noviembre, que el 29 de febrero pase al 28, que no genere fuera de sus fechas ni en pausa, y que correr dos veces no repita nada.                                                                                                             |
 | **Listas de movimientos** | `tests/calculos/movimientos.test.ts`         |       6 | Los totales, la agrupación por día con su subtotal y el aviso de gasto inusual justo en su borde de 5 veces el promedio.                                                                                                                                                                  |
 | **Fase 4**                | `tests/integracion/fase4.test.ts`            |      17 | Contra la base real: una transferencia no cambia ingresos ni gastos; el cron dos veces, o dos a la vez, no duplica; el día 31 cae el 30; deshacer un borrado; filtros y totales; plantillas; cuadrar con ajuste; y que no se pueda apuntar a categorías o cuentas de otro usuario.        |
-| **Producción**            | `tests/produccion/acceso-desarrollo.test.ts` |       6 | Que en el build de producción el botón de desarrollo no aparezca y su ruta responda 404, aunque `ACCESO_DESARROLLO` valga `true`; que sin sesión el inicio mande a `/ingresar`; y que el cron rechace a quien no trae `CRON_SECRET`.                                                      |
+| **Producción**            | `tests/produccion/acceso-desarrollo.test.ts` |       7 | Que en el build de producción el botón de desarrollo no aparezca y su ruta responda 404, aunque `ACCESO_DESARROLLO` valga `true`; que sin sesión `/` muestre la landing y el panel mande a `/ingresar`; y que el cron rechace a quien no trae `CRON_SECRET`.                              |
 | **Extremo a extremo**     | `e2e/registro.spec.ts`                       |       5 | Con un navegador real: un gasto se registra solo con teclado en menos de 10 segundos, Shift + Enter deja el panel abierto, Esc lo cierra, un monto inválido muestra su mensaje, borrar ofrece Deshacer y `/` enfoca el buscador.                                                          |
-| **Total**                 |                                              | **237** |                                                                                                                                                                                                                                                                                           |
+| **Landing**               | `e2e/landing.spec.ts`                        |       5 | Que la landing diga qué es y su acción lleve a entrar, que con "reducir movimiento" se vean los tres actos, que los montos digan que son de ejemplo, que el primer Tab salte al contenido y que con sesión `/` lleve al panel.                                                            |
+| **Total**                 |                                              | **243** |                                                                                                                                                                                                                                                                                           |
 
 ### Por qué importan las pruebas de integración
 
