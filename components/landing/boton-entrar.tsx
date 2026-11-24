@@ -4,10 +4,13 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 
-const CLASE_PRIMARIA =
-  "bg-m-laton text-m-sobre-laton hover:bg-m-laton-luz inline-flex items-center justify-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition-[background-color,translate] duration-200 active:translate-y-px disabled:opacity-70";
+export const CLASE_BOTON_PRIMARIO =
+  "bg-k-tinta text-k-sobre-tinta inline-flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 text-sm font-medium transition-[background-color,translate,box-shadow] duration-200 hover:bg-[#262b33] hover:shadow-[0_12px_30px_-12px_rgba(14,17,22,0.6)] active:translate-y-px disabled:opacity-70";
 
-/** Ícono oficial de Google, en sus colores: la marca la exige así en el botón de inicio de sesión. */
+export const CLASE_BOTON_SECUNDARIO =
+  "border-k-linea-fuerte text-k-tinta hover:border-k-tinta inline-flex items-center justify-center gap-2 rounded-full border px-6 py-3.5 text-sm font-medium transition-colors duration-200";
+
+/** Ícono oficial de Google, en sus colores: la marca lo exige así en el botón de inicio de sesión. */
 function LogoGoogle() {
   return (
     <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
@@ -29,16 +32,24 @@ function LogoGoogle() {
 }
 
 /**
- * Acción principal de la landing. Con Google configurado inicia sesión ahí mismo; si no
- * (por ejemplo, en desarrollo sin claves), lleva a la pantalla de ingreso.
+ * Acción principal. Con Google configurado inicia sesión ahí mismo; si no (por ejemplo, en
+ * desarrollo sin claves), lleva a la pantalla de ingreso.
  */
-export function BotonEntrar({ google, className = "" }: { google: boolean; className?: string }) {
+export function BotonEntrar({
+  google,
+  textos,
+  className = "",
+}: {
+  google: boolean;
+  textos: { entrar: string; abriendo: string; sinGoogle: string };
+  className?: string;
+}) {
   const [entrando, setEntrando] = useState(false);
 
   if (!google) {
     return (
-      <Link href="/ingresar" className={`${CLASE_PRIMARIA} ${className}`}>
-        Entrar
+      <Link href="/ingresar" className={`${CLASE_BOTON_PRIMARIO} ${className}`}>
+        {textos.sinGoogle}
       </Link>
     );
   }
@@ -50,12 +61,12 @@ export function BotonEntrar({ google, className = "" }: { google: boolean; class
         setEntrando(true);
         void signIn("google", { callbackUrl: "/panel" });
       }}
-      className={`${CLASE_PRIMARIA} ${className}`}
+      className={`${CLASE_BOTON_PRIMARIO} ${className}`}
     >
       <span className="grid size-6 place-items-center rounded-full bg-white">
         <LogoGoogle />
       </span>
-      {entrando ? "Abriendo Google…" : "Entrar con Google"}
+      {entrando ? textos.abriendo : textos.entrar}
     </button>
   );
 }

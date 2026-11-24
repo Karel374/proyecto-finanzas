@@ -12,7 +12,7 @@ const plexSans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Finanzas personales",
+  title: "Kanomics",
   description: "Registra tus gastos e ingresos, controla presupuestos y metas, y entiende tus finanzas.",
 };
 

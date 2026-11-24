@@ -1,14 +1,14 @@
-# Finanzas personales
+# Kanomics
 
-Aplicación web para llevar las finanzas personales en Ecuador: registrar gastos e ingresos en
+Aplicación web de finanzas personales, en español e inglés, que empieza por Ecuador: registrar gastos e ingresos en
 dólares, controlar presupuestos y metas, conocer el patrimonio, salir de deudas, preparar los
 gastos deducibles del SRI y recibir recomendaciones que siempre explican de dónde salen.
 
 `Next.js 16` · `TypeScript estricto` · `PostgreSQL 18` · `Prisma 7` · `Costo de operación: $0`
 
 > Proyecto personal en construcción. Se desarrolla por fases (ver [Hoja de ruta](#hoja-de-ruta)).
-> Hoy están terminadas las fases **1 a 4b**: una landing pública con una moneda que se abre en
-> tus gastos, y dentro de la app ya se puede registrar gastos, ingresos y transferencias, llevar
+> Hoy están terminadas las fases **1 a 4b**: una landing con una moneda 3D que recorre la historia
+> de tu dinero, y dentro de la app ya se puede registrar gastos, ingresos y transferencias, llevar
 > varias cuentas con sus saldos, cuadrarlas con el banco y programar movimientos recurrentes. El
 > panel de inicio, los presupuestos y el resto de módulos llegan en las fases siguientes. Las recomendaciones de la app serán educativas y no reemplazan la asesoría
 > de un profesional ni la consulta al SRI.
@@ -179,26 +179,30 @@ Cada recurrente guarda la última fecha que generó y solo avanza desde ahí. Ad
 el cron corra dos veces, o el cron y el respaldo corran al mismo tiempo, cada ocurrencia existe una
 sola vez. Hay pruebas para los dos casos.
 
-### Qué incluye la fase 4b: la landing pública
+### Qué incluye la fase 4b: la landing de Kanomics
 
-Quien entra a `/` sin sesión ve la landing; quien ya entró va directo a su panel, ahora en `/panel`.
+Quien entra a `/` (español) o `/en` (inglés) sin sesión ve la landing; quien ya entró va directo a
+su panel, ahora en `/panel`. La página es una **historia vertical**: una sola moneda 3D de la marca
+baja contigo y, a su paso, dibuja la línea de tu dinero.
 
-| Pieza                       | Qué hace                                                                                                                                                                                                                                    |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **La moneda viajera**       | Una sola moneda de la marca, dibujada en SVG con canto estriado y leyenda grabada, baja contigo por toda la página: cambia de lugar, tamaño, giro e inclinación según la sección, y el giro sigue al scroll. No usa librerías de animación. |
-| **Tres actos**              | En "Una moneda, tres preguntas" la moneda se detiene y, mientras bajas, muestra el saldo grabado, se abre en los gajos de colores de cada categoría y levanta el gajo de la recomendación con su porqué.                                    |
-| **Casa de moneda de noche** | Fondo negro cálido, texto marfil y el latón como único color. Los colores de categoría aparecen solo cuando la moneda se abre. Títulos en Archivo, cuyo eje de anchura da las leyendas expandidas del canto.                                |
-| **Honestidad**              | Todo monto de la demostración dice "Datos de ejemplo", y lo que todavía no existe dice en qué fase llega. Sin testimonios ni cifras inventadas.                                                                                             |
-| **Accesibilidad**           | Con "reducir movimiento" o sin JavaScript, cada sección muestra su moneda quieta y los tres actos uno debajo del otro. Enlace para saltar al contenido, foco visible y contraste AA.                                                        |
-| **Pantalla de ingreso**     | Comparte el mismo mundo: la moneda girando a un lado y el acceso al otro.                                                                                                                                                                   |
+| Pieza              | Qué hace                                                                                                                                                                                            |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **La entrada**     | La moneda cae, rebota de canto, gira como sobre una mesa y se detiene delante del nombre gigante, que se escribe mientras ella se frena. Se salta con scroll o clic y corre una vez por sesión.     |
+| **La moneda 3D**   | Titanio con acabado "proof" (campo espejo, relieve escarchado), canto estriado y biselado, dibujada en tiempo real con Three.js. Las texturas se generan en código: sin modelos ni imágenes.        |
+| **El viaje**       | Al bajar, la moneda rueda por un carril y deja una línea: gris y en zigzag mientras el dinero "se escapa", recta y oscura desde la misión, verde al final, cuando se posa en la tarjeta de entrada. |
+| **Seis capítulos** | El problema, la misión, cómo funciona (tres estaciones con pantallas de muestra), dónde funciona (paquete Ecuador), privacidad y quién la hace, con la ficha técnica.                               |
+| **Dos idiomas**    | Español e inglés desde un solo diccionario de textos (`lib/landing/textos.ts`).                                                                                                                     |
+| **Honestidad**     | Todo monto de muestra dice "Datos de ejemplo" y lo que aún no existe dice "Próximamente". Sin testimonios ni cifras inventadas.                                                                     |
+| **Accesibilidad**  | Con "reducir movimiento" no hay entrada, scroll suave ni viaje, y todo el contenido se ve quieto. Sin WebGL, la página está completa sin la moneda. Enlace para saltar al contenido y foco visible. |
+| **Rendimiento**    | La página sale estática. El 3D se descarga cuando el navegador queda libre y solo se redibuja cuando la moneda se mueve: en reposo no gasta GPU.                                                    |
 
 #### Cómo viaja la moneda
 
-Cada sección reserva un ancla, un espacio vacío donde la moneda debe posarse. Una capa fija dibuja
-la única moneda y, en cada cuadro, mide dónde están las anclas en la pantalla y la lleva de una a la
-siguiente según el centro de la vista. Así la página se acomoda alrededor de la moneda, y si cambia
-el diseño de una sección, la moneda la sigue sola. Entre secciones de texto viaja atenuada para no
-tapar lo que se lee.
+La línea es una función pura (`lib/landing/trayecto.ts`, con pruebas): para cada altura de la página
+devuelve cuánto se desvía del carril, con un zigzag que nace y muere suave en el capítulo del
+problema. El controlador mide la página, dibuja esa línea en SVG (punteada por delante, sólida por
+detrás) y en cada cuadro le dice a la escena 3D dónde va la moneda, cuánto rodó y hacia dónde se
+inclina. La escena solo dibuja: no sabe nada del scroll.
 
 ---
 
@@ -213,7 +217,8 @@ sus criterios de aceptación y la integración continua está en verde.
 | 2. Autenticación y siembra     | Inicio de sesión con Google y acceso de desarrollo, datos iniciales por usuario, menú y tema |
 | 3. Núcleo                      | Manejo de dinero en centavos, fechas en la zona de Ecuador y la capa de datos                |
 | 4. Cuentas y movimientos       | Cuentas, transferencias, registro rápido, plantillas, recurrentes y su tarea diaria          |
-| 4b. Landing pública            | Landing con la moneda que viaja y se abre, panel en `/panel` e ingreso con el mismo mundo    |
+| 4b. Landing pública            | Landing en español e inglés con la moneda 3D que viaja, panel en `/panel` e ingreso nuevo    |
+| 4c. Idiomas, países y demo     | App en dos idiomas, paquetes de país (Ecuador primero) y demo sin cuenta                     |
 | 5. Panel de inicio             | Tarjetas de resumen, fórmulas de ahorro y proyección, y los tres gráficos principales        |
 | 6. Presupuestos                | Estados, avisos y presupuestos sugeridos                                                     |
 | 7. Metas y plan a largo plazo  | Metas, fondo de emergencia, proyecciones a 1, 5 y 10 años e independencia financiera         |
@@ -322,29 +327,31 @@ la migración. La base rechaza el dato aunque un error de código intente guarda
 
 ## Tecnologías utilizadas
 
-| Tecnología              | Versión        | Uso en el proyecto                                                                 | Documentación                        |
-| ----------------------- | -------------- | ---------------------------------------------------------------------------------- | ------------------------------------ |
-| Node.js                 | 24             | Entorno de ejecución.                                                              | https://nodejs.org/docs/             |
-| Next.js                 | 16.4.6         | Interfaz, Server Components, Server Actions y rutas de API en un solo proyecto.    | https://nextjs.org/docs              |
-| React                   | 19.3.1         | Componentes de la interfaz.                                                        | https://react.dev/                   |
-| TypeScript              | 6.0.3          | Tipado estricto en todo el código.                                                 | https://www.typescriptlang.org/docs/ |
-| Tailwind CSS            | 4.3.5          | Estilos a partir de los tokens de color del diseño.                                | https://tailwindcss.com/docs         |
-| PostgreSQL              | 18             | Base de datos, con `DATE`, `ENUM`, `TIMESTAMPTZ`, restricciones e índices.         | https://www.postgresql.org/docs/     |
-| Prisma ORM              | 7.10.1         | Esquema tipado, migraciones versionadas y acceso a datos.                          | https://www.prisma.io/docs           |
-| node-postgres           | 8.23.1         | Controlador de PostgreSQL que usa Prisma.                                          | https://node-postgres.com/           |
-| Zod                     | 4.6.7          | Validación de variables de entorno, formularios y acciones.                        | https://zod.dev/                     |
-| NextAuth                | 4.24.15        | Inicio de sesión con Google y acceso de desarrollo, con sesiones JWT.              | https://next-auth.js.org/            |
-| Lucide                  | 1.77.0         | Íconos del menú y de los botones.                                                  | https://lucide.dev/                  |
-| date-fns y @date-fns/tz | 4.4.0 y 1.5.0  | Aritmética de fechas, semanas de lunes a domingo y la zona de Ecuador.             | https://date-fns.org/                |
-| Radix UI                | 1.8.1          | Paneles y diálogos accesibles: foco atrapado, Esc para cerrar, lector de pantalla. | https://www.radix-ui.com/            |
-| React Hook Form         | 7.92.0         | Formularios, validados con los mismos esquemas de Zod que las acciones.            | https://react-hook-form.com/         |
-| Playwright              | 1.65.1         | Pruebas de extremo a extremo con un navegador real.                                | https://playwright.dev/              |
-| Vitest                  | 5.1.0          | Pruebas unitarias y de integración.                                                | https://vitest.dev/                  |
-| ESLint                  | 10.15.0        | Análisis estático del código.                                                      | https://eslint.org/docs/latest/      |
-| Prettier                | 3.10.1         | Formato uniforme del código.                                                       | https://prettier.io/docs/            |
-| Husky y lint-staged     | 9.1.7 y 17.6.1 | Revisión automática antes de cada commit.                                          | https://typicode.github.io/husky/    |
-| Docker Compose          | 5              | PostgreSQL local, igual al de CI y producción.                                     | https://docs.docker.com/compose/     |
-| GitHub Actions          | —              | Integración continua en cada push.                                                 | https://docs.github.com/actions      |
+| Tecnología                   | Versión         | Uso en el proyecto                                                                 | Documentación                        |
+| ---------------------------- | --------------- | ---------------------------------------------------------------------------------- | ------------------------------------ |
+| Node.js                      | 24              | Entorno de ejecución.                                                              | https://nodejs.org/docs/             |
+| Next.js                      | 16.4.6          | Interfaz, Server Components, Server Actions y rutas de API en un solo proyecto.    | https://nextjs.org/docs              |
+| React                        | 19.3.1          | Componentes de la interfaz.                                                        | https://react.dev/                   |
+| TypeScript                   | 6.0.3           | Tipado estricto en todo el código.                                                 | https://www.typescriptlang.org/docs/ |
+| Tailwind CSS                 | 4.3.5           | Estilos a partir de los tokens de color del diseño.                                | https://tailwindcss.com/docs         |
+| PostgreSQL                   | 18              | Base de datos, con `DATE`, `ENUM`, `TIMESTAMPTZ`, restricciones e índices.         | https://www.postgresql.org/docs/     |
+| Prisma ORM                   | 7.10.1          | Esquema tipado, migraciones versionadas y acceso a datos.                          | https://www.prisma.io/docs           |
+| node-postgres                | 8.23.1          | Controlador de PostgreSQL que usa Prisma.                                          | https://node-postgres.com/           |
+| Zod                          | 4.6.7           | Validación de variables de entorno, formularios y acciones.                        | https://zod.dev/                     |
+| NextAuth                     | 4.24.15         | Inicio de sesión con Google y acceso de desarrollo, con sesiones JWT.              | https://next-auth.js.org/            |
+| Three.js y React Three Fiber | 0.187.0 y 9.8.2 | La moneda 3D de la landing, en tiempo real.                                        | https://threejs.org/docs/            |
+| GSAP y Lenis                 | 3.15.1 y 1.3.28 | Coreografía del scroll y scroll suave.                                             | https://gsap.com/docs/               |
+| Lucide                       | 1.77.0          | Íconos del menú y de los botones.                                                  | https://lucide.dev/                  |
+| date-fns y @date-fns/tz      | 4.4.0 y 1.5.0   | Aritmética de fechas, semanas de lunes a domingo y la zona de Ecuador.             | https://date-fns.org/                |
+| Radix UI                     | 1.8.1           | Paneles y diálogos accesibles: foco atrapado, Esc para cerrar, lector de pantalla. | https://www.radix-ui.com/            |
+| React Hook Form              | 7.92.0          | Formularios, validados con los mismos esquemas de Zod que las acciones.            | https://react-hook-form.com/         |
+| Playwright                   | 1.65.1          | Pruebas de extremo a extremo con un navegador real.                                | https://playwright.dev/              |
+| Vitest                       | 5.1.0           | Pruebas unitarias y de integración.                                                | https://vitest.dev/                  |
+| ESLint                       | 10.15.0         | Análisis estático del código.                                                      | https://eslint.org/docs/latest/      |
+| Prettier                     | 3.10.1          | Formato uniforme del código.                                                       | https://prettier.io/docs/            |
+| Husky y lint-staged          | 9.1.7 y 17.6.1  | Revisión automática antes de cada commit.                                          | https://typicode.github.io/husky/    |
+| Docker Compose               | 5               | PostgreSQL local, igual al de CI y producción.                                     | https://docs.docker.com/compose/     |
+| GitHub Actions               | —               | Integración continua en cada push.                                                 | https://docs.github.com/actions      |
 
 Las versiones son las estables vigentes al crear el proyecto. Tres decisiones merecen explicación:
 
@@ -371,7 +378,7 @@ proyecto-finanzas/
 ├── app/                          # Rutas de Next.js (App Router)
 │   ├── layout.tsx                # Idioma, tipografía, estilos y script del tema
 │   ├── globals.css               # Tokens de color en modo claro y oscuro
-│   ├── (publico)/                # Landing pública con la moneda viajera
+│   ├── (publico)/                # Landing de Kanomics en español (/) e inglés (/en)
 │   ├── (auth)/ingresar/          # Pantalla de inicio de sesión, en el mismo mundo
 │   ├── (app)/                    # Todo lo que requiere sesión: menú lateral y secciones
 │   │   ├── layout.tsx            # Menú lateral + contenido de hasta 1280 px
@@ -383,7 +390,7 @@ proyecto-finanzas/
 │       ├── auth/[...nextauth]/   # Rutas de NextAuth (404 para el proveedor de desarrollo fuera de él)
 │       └── cron/diario/          # Cron diario, protegido con CRON_SECRET
 ├── components/
-│   ├── landing/                  # Moneda (SVG), moneda viajera, tres actos y demostración
+│   ├── landing/                  # Moneda 3D, controlador del viaje, capítulos y pantallas de muestra
 │   ├── ui/                       # Botón, campos, panel lateral, diálogo y avisos (sobre Radix)
 │   ├── registro/                 # Panel de registro, formularios y atajo N
 │   ├── movimientos/              # Filtros, tabla por día y recurrentes

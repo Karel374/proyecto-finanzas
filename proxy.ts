@@ -2,7 +2,7 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
 
 /** Páginas que cualquiera puede ver sin sesión. */
-const PUBLICAS = new Set(["/", "/ingresar"]);
+const PUBLICAS = new Set(["/", "/en", "/ingresar"]);
 
 /**
  * Protege la app: sin sesión, toda página que no sea pública manda a /ingresar.

@@ -19,7 +19,7 @@ export function MenuLateral() {
         >
           $
         </span>
-        <span className="hidden text-base font-semibold xl:inline">Finanzas</span>
+        <span className="hidden text-base font-semibold xl:inline">Kanomics</span>
       </div>
 
       <BotonRegistrar />

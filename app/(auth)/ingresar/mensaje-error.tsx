@@ -17,7 +17,7 @@ export function MensajeError() {
   return (
     <p
       role="alert"
-      className="flex items-start gap-2 rounded-xl border border-[#5c2422] bg-[#2a1312] p-4 text-sm text-[#fca5a5]"
+      className="flex items-start gap-2 rounded-2xl border border-[#f3c9c6] bg-[#fdf1f0] p-4 text-sm text-[#9f2a22]"
     >
       <CircleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
       {MENSAJES[codigo] ?? "No se pudo iniciar sesión. Intenta de nuevo."}
