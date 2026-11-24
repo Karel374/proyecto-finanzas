@@ -40,7 +40,7 @@ afterAll(() => {
 describe("build de producción", () => {
   it("la página de ingreso no muestra el botón de desarrollo", async () => {
     const html = await (await fetch(`${BASE}/ingresar`)).text();
-    expect(html).toContain("Finanzas personales");
+    expect(html).toContain("Entra a tus finanzas.");
     expect(html).not.toContain("Entrar como desarrollador");
   });
 
@@ -75,7 +75,7 @@ describe("build de producción", () => {
   it("sin sesión, / muestra la landing pública", async () => {
     const respuesta = await fetch(`${BASE}/`, { redirect: "manual" });
     expect(respuesta.status).toBe(200);
-    expect(await respuesta.text()).toContain("Cada dólar, abierto en partes.");
+    expect(await respuesta.text()).toContain("El dinero no se pierde. Se escapa.");
   });
 
   it("sin sesión, el panel manda a /ingresar", async () => {
