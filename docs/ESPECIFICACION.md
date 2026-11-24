@@ -1,6 +1,6 @@
-# Especificación: app de finanzas personales
+# Especificación: Kanomics, app de finanzas personales
 
-Versión 1.0 · 17 de noviembre de 2026 · Karel
+Versión 1.1 · 24 de noviembre de 2026 · Karel
 
 ## 1. Visión y alcance
 
@@ -13,6 +13,39 @@ Principios que deben respetarse en todo el código:
 - **Cada recomendación muestra su porqué.** Junto al consejo aparece el dato que lo disparó (por ejemplo, "Gastaste $84 en Entretenimiento, 40 % más que tu promedio").
 - **La sección de inversión es educativa.** Toda pantalla de inversión lleva el aviso "Información educativa, no es asesoría financiera".
 - **Los datos son privados.** Se guardan en PostgreSQL separados por usuario y cada uno solo ve los suyos. Ningún dato financiero se envía a servicios de terceros.
+
+### Nombre, público e idiomas
+
+- **Nombre:** Kanomics. Reemplaza a "Finanzas" en la landing, la pantalla de ingreso, el menú y los títulos de página.
+- **Público:** personas que quieren ordenar su dinero (primero Ecuador y Latinoamérica), un grupo limitado de usuarios y reclutadores que revisan el proyecto como portafolio. Por eso la app tiene que verse y funcionar a nivel profesional, con costo $0.
+- **Idiomas:** español (principal) e inglés. La landing ya tiene las dos versiones: `/` en español y `/en` en inglés, con selector de idioma. La app por dentro se traduce en la fase 4c, con los textos sacados a diccionarios.
+
+### Paquetes de país
+
+La app no se encierra en Ecuador. Se separa en dos capas:
+
+- **Lo general**, que sirve en cualquier país: registrar, cuentas, presupuestos, metas, análisis y recomendaciones.
+- **Lo local**, que llega como un **paquete de país** que el usuario elige al entrar: moneda, formato de números y fechas, zona horaria, impuestos y deducibles, seguro de depósitos y aporte a la seguridad social.
+
+| Qué cambia por país | Ecuador (primer paquete) | Otro país |
+| --- | --- | --- |
+| Moneda | USD | La del país. Una sola moneda por usuario, sin conversiones |
+| Formato | `$1.234,56` | El del país |
+| Zona horaria | America/Guayaquil | La del país |
+| Impuestos y deducibles | SRI, de 7 a 20 canastas (sección 22) | Sin módulo al inicio: la sección se oculta |
+| Seguro de depósitos | Cosede, $32.000 | Se oculta o lleva su propio dato |
+| Seguridad social | IESS, 9,45 % | Se configura |
+
+Ecuador es el primer y, por ahora, único paquete. Agregar un país es escribir su paquete, no reescribir la app. Las reglas de la sección 6 sobre moneda y fechas pasan a leer el paquete del usuario en la fase 4c; hasta entonces siguen fijas en Ecuador.
+
+### Modo demo
+
+Cualquiera puede probar la app sin registrarse con el botón "Probar la demo":
+
+- Cada visitante recibe su propio usuario temporal, sembrado con datos de ejemplo, y puede tocar todo.
+- El cron diario borra los usuarios demo con más de 24 horas.
+- Hay un límite de creación de usuarios demo para que nadie llene la base.
+- Cuesta $0: usa la misma base gratuita. Los datos de la demo son de ejemplo, nunca reales.
 
 ## 2. Stack y arquitectura
 
@@ -34,6 +67,8 @@ El stack es de nivel producción desde el primer día: PostgreSQL, autenticació
 | Pruebas | Vitest para lógica, Playwright de extremo a extremo | Fórmulas y flujos principales cubiertos |
 | Calidad | ESLint, Prettier, Husky con lint-staged | El código se revisa antes de cada commit |
 | Integración continua | GitHub Actions | Gratis e ilimitado con el repositorio público. Corre lint, tipos, pruebas, migraciones y build en cada push |
+| 3D y movimiento | three con React Three Fiber, GSAP con ScrollTrigger, Lenis y Motion | La moneda 3D de la landing se dibuja en tiempo real; GSAP dirige la coreografía del scroll y Lenis lo suaviza. Motion queda para las micro-animaciones dentro de la app. Todo gratis, cargado de forma diferida y apagado con "reducir movimiento" |
+| Tipografía | Geist y Geist Mono con `next/font` | Grotesca geométrica limpia para titulares y texto; la mono para rótulos técnicos y cifras |
 | Monitoreo | Sentry | Plan Developer gratuito con 5.000 errores al mes, de sobra para un usuario |
 | Despliegue | Vercel Hobby con Neon Free y la dirección gratuita .vercel.app | $0 para un proyecto personal sin fines comerciales |
 
@@ -165,14 +200,53 @@ Reglas de uso del color:
 - Atajos de teclado: `N` abre el formulario de registro, `/` enfoca el buscador de movimientos y `Esc` cierra cualquier panel.
 - El menú se agrupa en cinco bloques. Día a día: Inicio, Movimientos, Cuentas y Presupuestos. Futuro: Metas y plan, Patrimonio, Deudas e Inversión. Crecer: Ingresos y Empleo. Entender: Análisis y Recomendaciones. Herramientas: Revisión mensual, Préstamos, Impuestos y Ajustes.
 
+### Dirección visual de Kanomics
+
+Decidido el 24 de noviembre de 2026. Reemplaza a la "casa de moneda de noche" (negro y latón), que se descartó por verse barata y por asociarse a cripto y casinos.
+
+- **Blanco y profesional.** Fondo blanco, tinta casi negra, líneas finas como estructura y un solo acento. Se ve formal por lo sobrio y un poco futurista por el titanio y el movimiento.
+- **Calidad de película.** Luz de estudio sobre el metal, movimiento continuo y sin cortes, cámara que acompaña y ritmo pausado. Nada de efectos de plantilla.
+- **Un solo sistema de diseño** para la landing y la app: mismos tokens, misma tipografía y componentes reutilizables. Los tokens azules de esta sección se migran a la familia de abajo antes de la fase 5.
+- **Descartado:** el negro con latón, la nube difuminada de fondo, la moneda que se multiplica en muchas monedas y la alcancía de aire infantil.
+
+| Token | Uso | Valor |
+| --- | --- | --- |
+| `--k-fondo` | Fondo | #FFFFFF |
+| `--k-fondo-2` | Bandas y tarjetas | #F4F6F8 |
+| `--k-tinta` | Texto principal y botón primario (píldora) | #0E1116 |
+| `--k-tinta-2` | Texto secundario | #5B6472 |
+| `--k-tinta-3` | Leyendas | #8A93A0 |
+| `--k-linea` | Líneas finas | #E3E7EC |
+| `--k-pizarra` | Degradado del nombre gigante | #8FA3B8 → blanco |
+| `--k-acento` | Lo ahorrado: solo datos de ahorro y el trazo final | #0E9F6E |
+
+La moneda es de **titanio cepillado** (plata fría con reflejos azulados), con acabado "proof": campo espejo y relieve escarchado.
+
 ### Landing pública
 
-La dirección `/` es una landing para quien no tiene sesión; quien ya entró va directo a `/panel`. Habla primero a personas de Ecuador que cobran en dólares y, al final, muestra a reclutadores cómo está construida la app. Su acción principal es "Entrar con Google".
+La dirección `/` (español) y `/en` (inglés) es una landing para quien no tiene sesión; quien ya entró va directo a `/panel`. Su acción principal es "Entrar con Google", con "Probar la demo" al lado.
 
-- **Objeto protagonista.** Una moneda propia de la marca (no una moneda real de curso legal) gira lento en la primera pantalla. Al bajar, en una secuencia de tres actos, muestra el saldo grabado (¿cuánto me queda?), se abre en los gajos de las categorías de gasto (¿en qué se me va?) y levanta un gajo con una recomendación y su porqué (¿qué debería hacer?). Termina siendo el anillo de gastos del panel.
-- **Mundo visual.** Casa de moneda de noche: fondo negro cálido, texto marfil y el metal (latón) como único color. Los colores de categoría de la sección 4 aparecen solo cuando la moneda se abre. Tipografía Archivo, expandida para rótulos y de ancho normal y peso liviano para titulares.
-- **Datos de ejemplo.** Todo monto que muestre es de ejemplo y lo dice. No hay testimonios, cifras de uso ni logos de clientes inventados.
-- **Accesibilidad y rendimiento.** Contraste AA, todo con teclado, sin animación con "reducir movimiento", sin librerías de animación y funcional desde 360 px de ancho.
+**La idea: una historia vertical.** Se inspira en la idea, no en la ejecución, de dos sitios de referencia: el de United Carriers (un objeto viaja de arriba hacia abajo con el scroll, visto desde arriba, y cada parada del recorrido es un capítulo) y el de Airform (el producto delante del nombre gigante, calma entre efecto y efecto, ficha técnica con líneas finas). El objeto protagonista es **una sola moneda 3D** de la marca, que nunca se multiplica.
+
+1. **Entrada.** Mientras la página termina de cargar, la moneda cae, aterriza de canto, gira como una moneda real sobre la mesa (disco de Euler) y se detiene de frente, delante del nombre KANOMICS en gigante; el nombre se escribe mientras ella se frena. Dura unos 2,5 s, se salta con scroll o clic, corre solo en la primera visita de la sesión y nunca bloquea el contenido, que ya está en el HTML.
+2. **El viaje.** Al bajar, la moneda rueda por un carril central y **dibuja una línea a su paso**: por delante el camino punteado, por detrás el trazo sólido. En el capítulo del problema la línea zigzaguea (el dinero que se escapa); desde la misión va recta; al final termina en el color del ahorro. Es el mensaje: tu dinero se desparramaba y terminas ahorrándolo.
+3. **Los capítulos**, a los lados del carril:
+   - 01 · El problema: "El dinero no se pierde. Se escapa."
+   - 02 · La misión: "Que cada dólar tenga un destino." Las tres preguntas: ¿cuánto me queda?, ¿en qué se me va?, ¿qué debería hacer?
+   - 03 · Cómo funciona: tres estaciones (registrar, entender, decidir), cada una con una pantalla real de la app con datos de ejemplo. Lo que aún no está construido lleva la etiqueta "Próximamente".
+   - 04 · Dónde funciona: el paquete Ecuador y la idea de los paquetes de país.
+   - 05 · Privacidad.
+   - 06 · Quién la hace: el creador y la **ficha técnica** para reclutadores (stack, datos, acceso, calidad, movimiento, idiomas, costo).
+   - Final: "Lo que se te escapaba, ahora se queda." La moneda se posa sobre una tarjeta de inicio de sesión con "Entrar con Google" y "Probar la demo".
+4. **Pie.** El nombre KANOMICS gigante dibujado en puntos, el idioma, el enlace al código y el año.
+
+Reglas:
+
+- **Datos de ejemplo.** Todo monto que se muestra es de ejemplo y lo dice. No hay testimonios, cifras de uso ni logos inventados. La historia del creador la escribe Karel; mientras no exista, no se inventa.
+- **Textos.** Hablan de lo que hace el sistema y de su visión, nunca de números de fase.
+- **Rendimiento.** La landing sale estática. El 3D se carga después del texto, con resolución limitada, y se pausa fuera de pantalla. Sin videos.
+- **Accesibilidad.** Contraste AA, todo usable con teclado, y con "reducir movimiento" no hay entrada, scroll suave ni viaje: el contenido se ve completo y quieto. Funciona desde 360 px de ancho; en celular el carril pasa al borde izquierdo.
+- **Sin WebGL**, la página se ve completa sin la moneda.
 
 ## 4. Categorías
 
@@ -1046,7 +1120,7 @@ Ajustes concentra todo lo configurable, y los datos del usuario siempre se puede
 
 ## 24. Orden de construcción y criterios de aceptación
 
-Todo se construye de una vez, pero en 16 fases encadenadas. Cada fase empieza solo cuando la anterior cumple sus criterios y la integración continua está en verde.
+Todo se construye de una vez, pero en 16 fases encadenadas, más las fases 4b y 4c que se agregaron después. Cada fase empieza solo cuando la anterior cumple sus criterios y la integración continua está en verde.
 
 ### Cómo se trabaja
 
@@ -1062,7 +1136,8 @@ Todo se construye de una vez, pero en 16 fases encadenadas. Cada fase empieza so
 | 2. Autenticación y siembra | Auth.js con acceso de desarrollo y Google, siembra por usuario, menú lateral por bloques y tema | Un usuario nuevo entra y ya tiene 15 categorías, sus ajustes, la cuenta Efectivo y las ideas semilla. Un usuario no puede leer datos de otro (prueba incluida). El botón de desarrollo no aparece en el build de producción |
 | 3. Núcleo | `lib/dinero.ts`, `lib/fechas.ts` y la capa `lib/datos/` | Pruebas de semana de lunes a domingo, de la zona de Ecuador cerca de medianoche y de meses de 28, 29, 30 y 31 días |
 | 4. Cuentas y movimientos | Cuentas, transferencias, cuadrar con el banco, panel de registro, plantillas, página de movimientos, recurrentes y su cron | Un gasto se registra solo con teclado en menos de 10 segundos. Una transferencia no cambia ingresos ni gastos. Un recurrente del día 31 cae el 30 de noviembre. Correr el cron dos veces no duplica nada |
-| 4b. Landing pública | Landing en `/` con la moneda que se abre, el panel pasa a `/panel` y la pantalla de ingreso adopta el mismo mundo | Sin sesión, `/` muestra la landing y "Entrar con Google" inicia sesión; con sesión, `/` lleva a `/panel`. Con "reducir movimiento" todo el contenido se ve sin animación. Contraste AA y uso con teclado comprobados. Se ve bien en 360 px, 768 px y escritorio |
+| 4b. Landing pública | Landing de Kanomics en `/` y `/en` con la historia vertical y la moneda 3D de la sección 3, el panel pasa a `/panel` y la pantalla de ingreso adopta el mismo estilo blanco | Sin sesión, `/` muestra la landing y "Entrar con Google" inicia sesión; con sesión, `/` y `/en` llevan a `/panel`. La entrada se salta y corre una vez por sesión. Con "reducir movimiento" o sin WebGL todo el contenido se ve sin animación. Contraste AA y uso con teclado comprobados. Se ve bien en 360 px, 768 px y escritorio |
+| 4c. Idiomas, países y demo | Textos de la app en diccionarios español/inglés, paquete de país (Ecuador primero) elegido al entrar y modo demo sin cuenta | Toda pantalla se ve completa en los dos idiomas. Cambiar de paquete cambia moneda, formato y zona horaria sin tocar las fórmulas. Un visitante entra a la demo sin cuenta y el cron borra los usuarios demo de más de 24 horas |
 | 5. Panel de inicio | Tarjetas, fórmulas 1 a 4, los tres gráficos con su vista de tabla | Cada fórmula tiene pruebas, incluido el caso "Sin datos". Los gráficos se ven bien en modo claro y oscuro |
 | 6. Presupuestos | Estados, cálculos, avisos y "Sugerir presupuestos" | Pruebas en 79,9 %, 80 %, 99,9 % y 100 %. Cada aviso aparece una sola vez por mes |
 | 7. Metas y plan a largo plazo | Metas, aportes, fondo de emergencia, horizonte, línea de vida, proyección a 1, 5 y 10 años, reparto en cascada e independencia financiera | El fondo se crea y se recalcula el día 1. Los aportes no cambian el balance. El reparto en cascada respeta la prioridad en casos de prueba |
@@ -1081,7 +1156,7 @@ Todo se construye de una vez, pero en 16 fases encadenadas. Cada fase empieza so
 - Sin `any` en TypeScript y sin errores de lint.
 - Cobertura de pruebas de al menos 80 % en `lib/calculos/` y `lib/reglas/`.
 - Ninguna consulta a la base fuera de `lib/datos/`.
-- Todo texto visible en español y con contraste AA en los dos temas.
+- Todo texto visible en español y en inglés (desde la fase 4c), con contraste AA en los dos temas.
 - Todo botón y campo usable con teclado y con foco visible.
 
 ## 25. Decisiones tomadas y pendientes
@@ -1106,7 +1181,14 @@ La meta es costo cero y todo quedó decidido con ese criterio. La especificació
 | TypeScript | 6.0. La 7 ya salió, pero typescript-eslint todavía no la soporta |
 | Cron | Una sola ruta diaria, `api/cron/diario`, protegida con `CRON_SECRET` |
 | Avisos | Tabla `Aviso` con clave única por usuario, para que cada aviso se cree una sola vez |
-| Landing pública | Se agrega la fase 4b: landing oscura con la moneda que se abre. Dentro de la app, el estilo pasa a uno cálido y sobrio (fondo tipo papel, un solo acento); sus tokens se actualizan en la sección 3 antes de la fase 5 |
+| Nombre | Kanomics |
+| Idiomas | Español e inglés. La landing primero (`/` y `/en`); la app en la fase 4c |
+| Países | Ecuador es el primer paquete de país; la app se prepara para otros (sección 1) |
+| Modo demo | Sí: usuario temporal por visitante, borrado a las 24 horas por el cron, con límite de creación |
+| Landing pública | Historia vertical con una sola moneda 3D de titanio sobre blanco, inspirada en la idea de United Carriers y Airform (sección 3). Se descartan el negro y latón, la nube difuminada, la moneda que se multiplica y la alcancía |
+| Estilo de la app | La misma familia blanca y profesional de la landing; sus tokens reemplazan a los azules antes de la fase 5 |
+| Librerías de movimiento | three con React Three Fiber, GSAP, Lenis y Motion, cargadas de forma diferida. Sin Astro ni Framer: un solo proyecto Next.js con componentes reutilizables |
+| Entrada con animación | Hecha en código, no en video ni con generadores de IA: la moneda de la entrada es la misma que viaja después |
 | Pendiente para la fase 12 | "Dar por perdido" un préstamo: el dinero ya salió de la cuenta, así que el gasto no debe volver a restarse del saldo |
 
 ### Fuentes
